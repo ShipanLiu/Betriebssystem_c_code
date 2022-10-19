@@ -1,3 +1,12 @@
+/*
+T00.25
+
+Shipan Liu  108019201553
+Minhua Liu  108020210282 
+
+*/ 
+
+
 #include <stdio.h>
 #include <stdlib.h>
 
