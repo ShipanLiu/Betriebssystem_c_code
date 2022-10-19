@@ -423,7 +423,7 @@ int main(void) {
             if (-2 == insertElement(pid, cpy)) {
               // setzt nicht die errno, siehe plist.h
               fprintf(stderr, "out of memory");        // 这里不能 用 perror来代替， 因为使用 perror的前提是： error wird gesetzt.
-              exit(REXIT_FAILUE);
+              exit(EXIT_FAILURE);
             }
         } else {
             /**
