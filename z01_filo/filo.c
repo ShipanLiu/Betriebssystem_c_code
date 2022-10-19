@@ -27,7 +27,6 @@ static int insertElement(int data) {
 
     // if the list has not initialized yet
     if(header == NULL) {
-        printf("initialize header\n");
         header = malloc(sizeof(node));
         // Fehlerbehandlung
         if(header == NULL) {
@@ -49,13 +48,11 @@ static int insertElement(int data) {
     while(1) {
         if(pointer->next != NULL) {
             if(pointer->value == data) {
-                printf("data duplicates\n");
                 return -1;
             }
             pointer = pointer->next;
         } else {
             if(pointer->value == data) {
-                printf("data duplicates\n");
                 return -1;
             }
             break;
@@ -81,8 +78,11 @@ static int insertElement(int data) {
 
 }
 
-// for test
-static int printAll() {
+// printAll() is only for test
+static void printAll() {
+    if(header == NULL) {
+        printf("empty");
+    }
     node* pointer = header;
     int i = 1;
     while(pointer->next != NULL) {
@@ -95,7 +95,7 @@ static int printAll() {
 
 
 
-static int removeElement() {
+static int removeElement(void) {
 
     //if the list has not initialized yet
     if(header == NULL) {
@@ -131,6 +131,18 @@ static int removeElement() {
 
 int main(int argc, char* argv[]) {
 
+
+    printf("insert 47: %d\n", insertElement(47));
+	printf("insert 11: %d\n", insertElement(11));
+	printf("insert 23: %d\n", insertElement(23));
+	printf("insert 11: %d\n", insertElement(11));
+
+	printf("remove: %d\n", removeElement());
+	printf("remove: %d\n", removeElement());
+
+	// TODO: add more tests
+
+
     printf("push 1: %d\n", insertElement(1));
     printf("push 2: %d\n", insertElement(2));
     printf("push 3: %d\n", insertElement(3));
@@ -141,9 +153,7 @@ int main(int argc, char* argv[]) {
     printf("push 8: %d\n", insertElement(8));
 
     printf("##############################\n");
-
     printAll();
-
     printf("##############################\n");
 
     printf("pop: %d\n", removeElement());
@@ -152,8 +162,12 @@ int main(int argc, char* argv[]) {
     printf("pop: %d\n", removeElement());
     printf("pop: %d\n", removeElement());
     printf("pop: %d\n", removeElement());
-    printf("pop: %d\n", removeElement());
-    printf("pop: %d\n", removeElement());
+    // printf("pop: %d\n", removeElement());
+    // printf("pop: %d\n", removeElement());
+
+    printf("##############################\n");
+    printAll();
+    printf("##############################\n");
 
     exit(EXIT_SUCCESS);
 } 
