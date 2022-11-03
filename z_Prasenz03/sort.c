@@ -7,7 +7,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "sort.h"
+#include "sort.h"s
 
 #define SIZE 5 // Warum ist es an dieser Stelle sinnvoll ein Makro zu verwenden? Was ist der Vorteil im Vergleich zu einer Variablen?
 
