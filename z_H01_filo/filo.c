@@ -2,9 +2,9 @@
 T00.25
 
 Shipan Liu  108019201553
-Minhua Liu  108020210282 
+Minhua Liu  108020210282
 
-*/ 
+*/
 
 
 #include <stdio.h>
@@ -44,7 +44,7 @@ static int insertElement(int data) {
     // loop the list by using pointer
     node* pointer = header;
 
-    //check duplicate  
+    //check duplicate
     while(1) {
         if(pointer->next != NULL) {
             if(pointer->value == data) {
@@ -99,7 +99,14 @@ static int removeElement(void) {
 
     //if the list has not initialized yet
     if(header == NULL) {
-        printf("list is not initialized or the list is empty\n");
+  /*I----> +--------------------------------------------------------------------+
+         | Laut Aufgabenstellung soll keine Fehlermeldung ausgegeben werden   |
+         | (-0.5): Die Funktionen insertElement() und removeElement() können |
+         | als Bibliotheksfunktionen angesehen werden. Bei solchen Funktionen |
+         | soll der Aufrufer entscheiden, ob er eine Fehlermeldung ausgeben   |
+         | will oder nicht.                                                   |
+         +-------------------------------------------------------------------*/
+        // printf("list is not initialized or the list is empty\n");  // 这句话 不应该打印出来， 不能有fehlermeldungen 的出现。
         return -1;
     }
 
@@ -108,9 +115,9 @@ static int removeElement(void) {
         int headerValue = header->value;
         free(header);
         header = NULL;
-        return headerValue; 
+        return headerValue;
     }
-    
+
 
     //remove the youngest element
     node* pointer1 = header;
@@ -170,16 +177,4 @@ int main(int argc, char* argv[]) {
     printf("##############################\n");
 
     exit(EXIT_SUCCESS);
-} 
-
-
-
-
-
-
-
-
-
-
-
-
+}

@@ -94,7 +94,7 @@ static int wordCompare(const void *a, const void *b){
      * Gelesen als: w1 ist ein Zeiger auf konstante Char-Zeiger
      * Das heißt, dass diese Funktion die Strings, die wir vergleichen wollen (char*) nicht verändern darf.
     */
-    char* const *w1 = (char* const *)a;   // 用 *a 把 pointer a 中的值取出来。  给 字符串 w1    *w1  是定义一个 pointer 用的
+    char* const *w1 = (char* const *)a;   // 用 *a 本身就是 str， 在 *a前面再加一个 * 就是 把 这个str 的地址拿出来。
     char* const *w2 = (char* const *)b;
 
     // Da wir an die Strings hinter den Pointern wollen, müssen wir diese dereferenzieren.
@@ -112,6 +112,7 @@ int main(int argc, char**argv){
      * fgets ließt Buf_line-1 Zeichen von stdin ein und speichert diese in buf.
      * buf muss Buf_line groß sein, denn fgets setzt ans Ende noch ein \0
      * Fehlerbehandlung von fgets: siehe nach While-Schleife
+     * fgets本身就是 一行一行读的
      */
     while(fgets(buf, Buf_line, stdin)){  // char* fgets(char*s, int n, FILE *fp/stdin)  n是容器的size
         size_t length = strlen(buf);  // size_t strlen(const char* str);  参数是一个 pointer（string pointer 或者 array 地址）
@@ -183,6 +184,8 @@ int main(int argc, char**argv){
 
         // Zeile kopieren, da buf im nächsten Durchlauf überschrieben wird.
         // 因为 buf 在下一轮的 stdin 中 要 被 overwrite， 所以 把里面的内容先 保存下来。
+        // 为什么？ 因为buf 是一个指针， 你不能吧一个指针 存到 words【】 里面， 因为 指针指向的 值 是有可能 变化的。
+        // 所以首先需要 复制保存 指针指向的值。
         char *line = strdup(buf);
         // 假如 strdup 出错
         if(line == NULL) {
@@ -211,7 +214,7 @@ int main(int argc, char**argv){
 
     // Ausgabe
     for(int i=0; i<wordCount; i++){
-        if(EOF == puts(words[i]))  // 建议 用 fputs  来代替 puts(会自动结尾换行)，  puts 和 printf 的功能和 用法一样
+        if(EOF == puts(words[i]))  // 这里不 建议（因为 fputs 不会在见了‘\0’ 之后停止） 用 fputs  来代替 puts(会自动结尾换行)，  puts 和 printf 的功能和 用法一样
                                   // fputs(words[i], stdout)
             die("puts");
         // Einzelne Zeiger im Array freigeben
