@@ -124,7 +124,7 @@ int main(int argc, char**argv){
         // length == Zeilen_Laenge && buf[Zeilen_Laenge-1] != '\n'  ： 这样说明超了，
         // length == 101 && buf[100] = '\n'  ： 这样说明正好装满，
 
-        // 把多余的  字母 吃掉
+
         if(length == Zeilen_Laenge && buf[Zeilen_Laenge-1] != '\n'){
             fprintf(stderr, "input too long\n");  // 可以用 fputs代替, 不能用 perror 来代替， 因为 errno 没有被set。
             /**
@@ -139,6 +139,7 @@ int main(int argc, char**argv){
              * Also muss dieser Rest noch zeichenweise "weggelesen" werden.
              * Dieses Weglesen endet bei \n oder EOF, im Falle dass das Dateiende (STRG-D) erreicht wurde.
              */
+            // 把多余的  字母 吃掉
             int c;
             do{
                 c =  getchar();

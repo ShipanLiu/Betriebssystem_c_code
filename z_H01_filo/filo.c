@@ -19,6 +19,10 @@ typedef struct node{
 // define the header
 static node* header = NULL;
 
+
+// !!! bibiothekfunction do not make it static 
+// !!! (because the other Aufgabe may will not have the insertEle function) 
+
 static int insertElement(int data) {
     // not negative
     if(data < 0) {
@@ -27,6 +31,9 @@ static int insertElement(int data) {
 
     // if the list has not initialized yet
     if(header == NULL) {
+		
+		//!!!  here better to cast  (node*)malloc(.....)
+		
         header = malloc(sizeof(node));
         // Fehlerbehandlung
         if(header == NULL) {
@@ -52,6 +59,7 @@ static int insertElement(int data) {
             }
             pointer = pointer->next;
         } else {
+			// pointer 没有 后继者， 现在就要查看 pointer 本身的值
             if(pointer->value == data) {
                 return -1;
             }
@@ -61,6 +69,9 @@ static int insertElement(int data) {
 
 
     //now add new data in the list
+	//!!! clear code :  (node*)malloc(...)
+	//!!! you can use calloc, the value will be initialized 
+	//!!! ==> elem *newElem = calloc(1, sizeof(elem));  1 代表 我只要 分配一个。  
     node* newItem = malloc(sizeof(node));
 
     //Fehlerbehandlung
@@ -113,7 +124,8 @@ static int removeElement(void) {
     // if only header exits in the list
     if(header->next == NULL) {
         int headerValue = header->value;
-        free(header);
+		//!!!  要先 free ， 因为free 要求一个 adresse
+        free(header);  
         header = NULL;
         return headerValue;
     }

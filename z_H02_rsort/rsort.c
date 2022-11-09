@@ -1,8 +1,17 @@
+/*
+T00.25
+
+Shipan Liu  108019201553
+Minhua Liu  108020210282
+
+*/
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define bufferMaxSize 12 // word_length + '\n' + '\0'
+#define bufferMaxSize 102 // word_length + '\n' + '\0'
 
 static int wordNum = 0;
 
@@ -27,40 +36,37 @@ static int compareFunc(const void *a, const void *b) {
 
 static char** input() {
 
-  int wordArrSize = 2;
+  int wordArrSize = 50;
 
   // create buffer for holding the world
-  char* buffer = malloc(bufferMaxSize * sizeof(char));
-  if(buffer == NULL) {
-    kill("malloc has problem");
-  }
+  char* buffer = (char*)malloc(bufferMaxSize*sizeof(char));
 
   // we do not know the size of the words, so first allocate 50 places.
-  char** wordsArr = malloc(wordArrSize * sizeof(char*));
-
+  char** wordsArr = (char**)malloc(wordArrSize * sizeof(char*));
   if(wordsArr == NULL) {
-    kill("malloc at assigning wordsArr");
-  }
+        kill("malloc at assigning wordsArr");
+    }
 
   while(1) {
-    fflush(stdin);
-    errno = 0;
+    if(EOF == fflush(stdin)) {
+		kill("fflush stdin");
+	}
+
     char* word = fgets(buffer, bufferMaxSize, stdin);
     if(word == NULL) {
-      if(errno != 0) {
-        kill("fgets failed");
-      }
+	  // if error
+      if(ferror(stdin)) {
+	    kill("fgets -> stdin");
+	  }
+	  // if read EOF
       break;
-    }
+	}
 
     // get the real length of the word
     size_t wordLength = strlen(word);
-    // printf("word: %s\n", word);
-    // printf("wordLength: %d\n", wordLength);
 
     // if the word is too short(just a '\n')
     if(wordLength <= 1) {
-      // printf("you can not just input an enter");
       continue;
     }
 
@@ -69,10 +75,10 @@ static char** input() {
       warn("word is too long");
 
     // get rid of the extra bits in the stdin
-    int c;
-    do{
-      c = getchar();
-    }while(c != EOF && c != '\n');
+      int c;
+      do{
+        c = getchar();
+      }while(c != EOF && c != '\n');
 
     // abandon this word, read next line.
       continue;
@@ -82,21 +88,19 @@ static char** input() {
     if(word[wordLength-1] == '\n') {
       word[wordLength-1] = '\0';
       wordLength--;
-      // printf("wordLength after --: %d\n", wordLength);
     }
 
     // if the wordArr is full
     if(wordNum >= wordArrSize) {
-      // printf("add more space");
       wordArrSize += wordArrSize;
-      wordsArr = realloc(wordsArr, wordArrSize*sizeof(char*));
+      wordsArr = (char**)realloc(wordsArr, wordArrSize*sizeof(char*));
       if(wordsArr == NULL) {
         kill("relloc");
       }
     }
 
     // put the word in the wordArr
-    char* wordCpy = malloc((wordLength+1)*sizeof(char)); // create space for word + '\0'
+    char* wordCpy = (char*)malloc((wordLength+1)*sizeof(char)); // create space for word + '\0'
     if(wordCpy == NULL) {
       kill("malloc");
     }
@@ -106,10 +110,8 @@ static char** input() {
     wordNum++;
   }
 
-  // stdin debug
-  if(ferror(stdin)) {
-    kill("stdin");
-  }
+  // we do not need buffer any more
+  free(buffer);
 
   return wordsArr;
 
@@ -120,31 +122,25 @@ static char** input() {
 int main() {
 
   //01-input
-  char** wordArr = input();
+  char** wordsArr = input();
   //02-sort
-  qsort(wordArr, wordNum, sizeof(char*), compareFunc);
+  qsort(wordsArr, wordNum, sizeof(char*), compareFunc);
   //03-output
   for(int i = 0; i < wordNum; i++) {
     // use puts but not fputs
-    if(puts(wordArr[i]) == EOF) {
+    if(puts(wordsArr[i]) == EOF) {
       kill("puts");
     }
-    free(wordArr[i]);
+    free(wordsArr[i]);
   }
 
   //04-free the space
-  free(wordArr);
+  free(wordsArr);
 
   //05-clean stdout
-  if(EOF == fflush(stdout))
-    kill("fflush");
+  if(EOF == fflush(stdout)){
+    kill("fflush stdout");
+  }
 
   exit(EXIT_SUCCESS);
 }
-
-
-/*
-check if you have to use that much printf(Fehlermeldung erlaubt?)
-
-
- */
