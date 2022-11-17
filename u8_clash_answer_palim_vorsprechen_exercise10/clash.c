@@ -62,27 +62,27 @@ static void print_prompt(void) {
      * Den Fall kann man erkennen, da in hier dann die errno auf ERANGE gesetzt wird.
      * -> Dann muss cwd vergrößert werden.
      * Alle anderen Errnowerte bedeuten einen "echten" Fehler.
-     * 
-     * 
+     *
+     *
      * char *getcwd( char *buffer, int maxlen );
      * 参数说明：getcwd()会将当前工作目录的绝对路径复制到参数buffer所指的内存空间中,
      *  参数maxlen为buffer的空间大小。
-     * On success, getcwd() will return a pointer to a string 
+     * On success, getcwd() will return a pointer to a string
      * containing the pathname of the current working director
-     * 
+     *
      * On failure, getcwd() return NULL, and errno is set to
      * indicate the error
-     * 
+     *
      * C库宏ERANGE表示范围错误，如果输入参数超出范围，则会发生范围错误，在该范围内定义数学函数并将errno设置为ERANGE。
-     * 
-     * 
-     * 
-     * 
-     * 
-     * 
+     *
+     *
+     *
+     *
+     *
+     *
      */
     while (1) {
-        cwd = realloc(cwd, len);  //pointer cwd 指向开辟的新的空间， 
+        cwd = realloc(cwd, len);  //pointer cwd 指向开辟的新的空间，
         if (cwd == NULL) {
             die("realloc");
         }
@@ -98,11 +98,11 @@ static void print_prompt(void) {
         }
         len *= 2;
     }
-    
-    printf("%s: ", cwd);  // 根据题意： Promptsymbol und folgt mit doppeltpoint aus geben 
+
+    printf("%s: ", cwd);  // 根据题意： Promptsymbol und folgt mit doppeltpoint aus geben
     // 需要 flush，防止 再 缓存区里面的东西 没有完全 弄出来，
     // printf()输出时是先输出到缓冲区，然后再从缓冲区送到屏幕上。
-    // 那什么情况下才会将缓冲区里的内容送到屏幕上呢？一，使用fflush（stdout）强制刷新  
+    // 那什么情况下才会将缓冲区里的内容送到屏幕上呢？一，使用fflush（stdout）强制刷新
     fflush(stdout);
 
     free(cwd);
@@ -133,27 +133,27 @@ static int print_job(pid_t pid, const char *buf) {
 static void collect_zombies(void) {
     pid_t pid;
     int status;
-    
+
     /**
      * waitpid:
      * -1, um auf beliebigen Kindprozess zu warten
      * WNOHANG, um sofort zurückzukehren, falls es keine fertigen Kindprozesse gibt
-     * 
-     * 
+     *
+     *
      * pid_t waitpid(pid_t pid, int *status, int options);
-     * 
+     *
      * pid=-1	等待任何子进程，此时的waitpid()函数就退化成了普通的wait()函数
-     * 
+     *
      * WNOHANG 	如果pid指定的子进程没有结束(子进程 还没有死)，则waitpid()函数立即返回0，而不是阻塞在这个函数上等待；
      * 如果结束了，则返回该子进程的进程号。
-     * 
-     * 
+     *
+     *
      */
-    // 当 waitpid() 返回的 pid > 0 的时候， 说明 子进程已经死， 返回死了的 子进程的 进程号. 
-    // 返回pid = -1 的时候， 说明 fehler. 
-    // 返回 pid = 0 说明 kinder 还活着， 没有死 
+    // 当 waitpid() 返回的 pid > 0 的时候， 说明 子进程已经死， 返回死了的 子进程的 进程号.
+    // 返回pid = -1 的时候， 说明 fehler.
+    // 返回 pid = 0 说明 kinder 还活着， 没有死
     // wir gucken ob es noch kinder Zombie gibt, wenn ja, dann nehmen wir das raus und gebe auch die drin stehende Connandozeile aus
-    // wenn kein zombie kind nicht mehr findet, dann break die while Schleife 
+    // wenn kein zombie kind nicht mehr findet, dann break die while Schleife
     while ((pid = waitpid(-1, &status, WNOHANG)) != 0) {
         // 进程号 一般都 大于0
         if (pid < 0) {
@@ -165,12 +165,12 @@ static void collect_zombies(void) {
         }
 
         /**
-         * 
+         *
          *  我们之前已经 将 hintergrundprozess 加入到了plist.c 里面的 list 里面了。
          *  我们必须将这个 已经死掉的 hintergrundprozess 从 list 里面 除掉。
-         *  把藏在这个 hintergrundprozess 里面的东西拿出来（是个 commando Zeilen 放到 buf 里面） 
-         * 
-         * 
+         *  把藏在这个 hintergrundprozess 里面的东西拿出来（是个 commando Zeilen 放到 buf 里面）
+         *
+         *
         */
         // 题目给出的 commondozeile 的长度最大是1337（包含 '\n'）， 我们的 buf 要 1338 因为要加上 '/0'
         char buf[MAX_LINE + 1];
@@ -180,13 +180,13 @@ static void collect_zombies(void) {
          * Die Liste enthält nur die laufenden Hintergrundprozesse.
          * Kindprozess mit der ProzessID pid ist fertig, kann aus Liste entfernt werden.
          * Kommandozeile des Prozesses aus der Liste in buf speichern.
-         * 
+         *
          * int removeElement(pid_t pid, char *buf, size_t buflen)
          */
         if (removeElement(pid, buf, sizeof(buf)) < 0) {
           continue;
         }
-        
+
         // Exitstatus ausgeben
         print_exit(buf, status);
       }
@@ -199,27 +199,27 @@ int main(void) {
         // 把当前的 目录打印下来
         print_prompt();
 
-        // 现在 要 新增 输入 
+        // 现在 要 新增 输入
         // Zeile von der Standardeingabe einlesen
         // MAX_LINE = 1337 Zeichen inkl. \n + 1 für \0
         char buf[MAX_LINE + 1];  /* 因为需要 '\0' */
         // 从 stdin 里面读取， 并且 写入到buf 里面
-        if (fgets(buf, sizeof(buf), stdin) == NULL) {  // fgets()  如果读入错误或遇到文件结尾(EOF)，则返回NULL. 
+        if (fgets(buf, sizeof(buf), stdin) == NULL) {  // fgets()  如果读入错误或遇到文件结尾(EOF)，则返回NULL.
             // C 库函数 int feof(FILE *stream) 测试给定流 stream 的文件结束标识符。
             // 要记住，你最多输入1337个字符，在按下 回车之后 会加上  '\n' 和 EOF。
-            // 我们要判断 返回 NULL 是读了EOF 还是 有错了 
+            // 我们要判断 返回 NULL 是读了EOF 还是 有错了
             if (feof(stdin)) {
                 break;  // 如果是读到了 stdin， 那就 break 不 die
             }
             die("fgets");
         }
-        
+
         /**
          * Akzeptierte Zeilen dürfen maximal 1337 Zeichn inklusive \n lang sein
          * Falls Puffer voll und letztes gelesenes Zeichen ist nicht \n -> Zeile hat mindestens 1337 Zeichen und ist daher zu lang.
          * Rest der Zeile mit fgetc weglesen, bis EOF oder \n erreicht ist.
-         * 
-         * 现在要检查 你 输入的情况了， strlen(buf) = MAX_LINE 表示 buf 放满了 
+         *
+         * 现在要检查 你 输入的情况了， strlen(buf) = MAX_LINE 表示 buf 放满了
          * 假如你 输入 多了, buf只能盛放 1337个字符， 最后一个 字符 不是 ‘\n’
          * 你本来应该 输入 1336字符 + '\n' ，但是 你输入了 比如1339个字符。 比如： buf 里面的 1337个字符 + ‘A’ + '\n'
          */
@@ -233,29 +233,29 @@ int main(void) {
             do {
                 c = fgetc(stdin);
             } while (c != EOF && c != '\n');
-            
+
             // Fehlerbehandlung fgetc()
             if(ferror(stdin))
                 die("fgetc");
-                
+
             // Zeile ignorieren
             continue;
         }
-        
+
         // Leerzeilen überspringen
         if (strlen(buf) <= 1) {   // 只有 ‘\n’ 的时候， 或者用户直接输入了 ctrl + D ， 输入了EOF
            continue;
         }
 
 
-        
+
         // 最后的\n entfernen，换成'\0'
-        buf[strlen(buf)-1] = '\0'; 
+        buf[strlen(buf)-1] = '\0';
 
         /**
          * Falls das letzte Zeichen ein & ist, handelt es sich um einen Hintergrundprozess.
          * & entfernen
-         * 
+         *
          * 上面把 最后一个字符换成了 '\0' ， 再次调用strlen(buf) ， 长度不算 '\0'
          */
         bool background = false;
@@ -282,43 +282,43 @@ int main(void) {
         /**
          * Eingabezeile zerteilen und argv[] Array erstellen.
          * Trennzeichen sind Leerzeichen und Tabulatoren.
-         * 
-         * 
+         *
+         *
          *  #include <string.h>
             #include <stdio.h>
-            
+
             int main () {
             char str[80] = "This is - www.runoob.com - website";
             const char s[2] = "-";
             char *token;
-            
-            // 获取第一个子字符串 
+
+            // 获取第一个子字符串
             token = strtok(str, s);
-            
+
             //继续获取其他的子字符串
             while( token != NULL ) {  // 完事了之后， 返回 NULL
                 printf( "%s\n", token );
-                
+
                 token = strtok(NULL, s);  // 第二次使用的 时候， 把 NULL 写进去 就行了
             }
-            
+
             return(0);
             }
-         * 
-         * 
-         * 
+         *
+         *
+         *
          * 输出结果：
-         *  This is 
-            www.runoob.com 
+         *  This is
+            www.runoob.com
             website
-         * 
-         * 
-         * 比如 buf 里面存的是 : echo hello world  ===> 
+         *
+         *
+         * 比如 buf 里面存的是 : echo hello world  ===>
          * argv[0] = echo
          * argv[1] = hello
          * argv[2] = world
          * argv[3] = NULL
-         * 
+         *
          */
         int i = 0;
         char* argv[MAX_LINE/2+1 + 1 /* NULL */]; // argv【】 里面存的是字符串， 因为最后返回的 NULL 也要被保存
@@ -329,7 +329,7 @@ int main(void) {
         }
 
 
-        
+
         // Es wurde nichts oder nur Trennzeichen eingegeben., 判断是否有东西。
         if (argv[0] == NULL) {
            continue;
@@ -348,14 +348,14 @@ int main(void) {
          * Falls argv[2] != NULL ist, wurde zu viel eingegeben， easy
          * chdir() ändert das Arbeitsverzeichnis.
          * chdir 是C语言中的一个系统调用函数（同cd），用于改变当前工作目录，其参数为Path 目标目录，可以是绝对目录或相对目录
-         * 
-         * 
+         *
+         *
          * int strcmp(const char *str1, const char *str2)
          *  如果返回值 < 0，则表示 str1 小于 str2。
             如果返回值 > 0，则表示 str1 大于 str2。
             如果返回值 = 0，则表示 str1 等于 str2。
          */
-        
+
         // 假如是 "cd"  命令的话
         if (strcmp(argv[0], "cd") == 0) {
               if (argv[1] == NULL || argv[2] != NULL) {
@@ -369,14 +369,14 @@ int main(void) {
         /**
          *  jobs命令可以查看当前有多少在后台运行,
          * 比如：
-         * 
+         *
          *  [1]   7895 Running                 gpass &
             [2]   7906 Running                 gnome-calculator &
             [3]-  7910 Running                 gedit fetch-stock-prices.py &
             [4]+  7946 Stopped                 ping cyberciti.biz
-         * 
-         * 
-         * 
+         *
+         *
+         *
          * 'jobs'
          * Soll PID und Kommando von allen laufenden Hintergrundprozesse ausgeben -> walkList() siehe plist.c / plist.h
          * Nutzung: nur "jobs" eingeben, jobs 命令是 不需要参数的， 所以我们期望 只有 argv[0] = "jobs" 并且 argv[1] = NULL
@@ -394,7 +394,7 @@ int main(void) {
         }
 
 
-        
+
         // 如果 既不是 cd 命令 也不是 jobs 命令， 那也要执行。之前的 cd 和 jobs 不分 background， 但这里， 其他的命令要分 background 还是 front
         // Alle anderen Kommandos in einem Kindprozess ausführen.
         pid_t pid = fork();
@@ -409,9 +409,9 @@ int main(void) {
         /**
          * 在我们输入 buf 里面的命令了，假如最后结尾为 & , 说明这是一个 background ， 意思就是说让 kinder process
          * 去执行， 所以要 假如 到 plist 里面的list 里面。
-         * 
-         * 
-         * 
+         *
+         *
+         *
         */
 
         if (background) {
@@ -427,7 +427,7 @@ int main(void) {
             }
         } else {
             /**
-             * 这里是 Vordergrund， 不想 background 有 有collect_zombies（） 函数 来清理 ， 我们这里需要自己去清理 dead kinder，这里是 父进程的区域， 
+             * 这里是 Vordergrund， 不想 background 有 有collect_zombies（） 函数 来清理 ， 我们这里需要自己去清理 dead kinder，这里是 父进程的区域，
              * 所以我们就等待 kinderprocess 死亡
              * Vordergrundprozess
              * Auf Kind mit der PID warten, die wir von fork() bekommen haben.
@@ -435,6 +435,7 @@ int main(void) {
             int status;
             if (waitpid(pid, &status, 0) < 0) { // 假如第三个参数是 0， 说明没有 option，这此时waitpid()函数就完全退化成了wait()函数
                                                 // waitpid()一般返回 被 terminated 的 kinderprocess 的 pid， 返回一个小于 0 的数， 说明出错了
+                                                // waitpad 不像 wait（） 一样一直在那里 傻等着， 而是 继续执行。
                 die("waitpid");
             }
             // Hier Exitstatus ausgeben.
@@ -448,11 +449,11 @@ int main(void) {
 
 /**
  * 执行过程 ：
- * 
+ *
  * 1. step ：  make
- * 
+ *
  * 2. step：   ./calsh
- * 
+ *
  * 例子：
  *  [root@java100 u_8_2_clash_answer]# ./clash
     /root/Betriebssystem_workplace/u_8_2_clash_answer: jobs
@@ -460,7 +461,7 @@ int main(void) {
     hallo world $
     Exitstatus [echo hallo world $] = 0
     /root/Betriebssystem_workplace/u_8_2_clash_answer: jobs
-    /root/Betriebssystem_workplace/u_8_2_clash_answer: 
+    /root/Betriebssystem_workplace/u_8_2_clash_answer:
 
 
 
@@ -472,10 +473,10 @@ int main(void) {
     /root/Betriebssystem_workplace/u_8_2_clash_answer: echo hallo world
     hallo world
     Exitstatus [echo hallo world] = 0
-    /root/Betriebssystem_workplace/u_8_2_clash_answer: 
+    /root/Betriebssystem_workplace/u_8_2_clash_answer:
     Exitstatus [sleep 5] = 0
-    /root/Betriebssystem_workplace/u_8_2_clash_answer: 
-    /root/Betriebssystem_workplace/u_8_2_clash_answer: 
+    /root/Betriebssystem_workplace/u_8_2_clash_answer:
+    /root/Betriebssystem_workplace/u_8_2_clash_answer:
     /root/Betriebssystem_workplace/u_8_2_clash_answer: sleep 5
 
 
@@ -487,11 +488,9 @@ int main(void) {
     Exitstatus [sleep 5] = 0
 
 
- * 
- * 
- * 
- * 
- * 
+ *
+ *
+ *
+ *
+ *
 */
-
-

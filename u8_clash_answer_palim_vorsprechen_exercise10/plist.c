@@ -33,15 +33,15 @@ static struct qel {
 // walklist 接收一个 函数 作为 参数
 void walkList(int (*callback) (pid_t, const char *)) {
 	// TODO: implement me
-    
+
     /**
      * Die Funktion walkList() soll einmal über alle Listeneinträge laufen und für jeden Eintrag die übergebene Callback-Funktion ausführen.   easy
      * Die Callback-Funktion soll die pid und die Kommandozeile der laufenden Hintergrundprozesse ausgeben. -> print_jobs Funktion in clash.c     easy
      * Die laufenden Hintergrundprozesse sind in der verketteten Liste gespeichert.  注意 在 linked list 里面 存放着
      * Wenn in clash.c "walkList(print_jobs);" aufgerufen wird und hier "callback(x->pid, x->cmdline)", dann werden die Parameter x->pid und x->cmdline an print_jobs gegeben.
-	 * 
+	 *
 	 * C 语言结构体之点运算符( . )和箭头运算符( -> )的区别
-	 * 
+	 *
 	 *  相同点：两者都是二元操作符，而且右边的操作数都是成员的名称。
 		不同点：点运算符( . )的左边操作数是一个结果为结构的表达式；
         箭头运算符( -> )的左边的操作数是一个指向结构体的指针。
@@ -59,11 +59,12 @@ void walkList(int (*callback) (pid_t, const char *)) {
 		11 // 访问数据操作如下：
 		12 data.age = 24; // 结构体变量通过点运算符( . )访问
 		13 pdata->age = 24; // 指向结构体的指针通过箭头运算符( -> )访问
-	 * 
+	 *
      */
 
     for (struct qel* x = head; x; x = x->next) {   // 中间的哪个单独的 x 可以替换成  x != NULL
         if (callback(x->pid, x->cmdLine)) {   // callback()就是 传过来的 print_jobs()  函数
+                                              // // 正常 情况下 callback 返回 0，  if（0） 就不会执行 berak， 假如 不是 0， 那就执行 break。
             break;
         }
     }

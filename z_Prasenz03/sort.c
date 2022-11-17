@@ -1,5 +1,5 @@
 /*
-这是 Ubung3 上课老师讲的例子。
+这是 Ubung3 上课老师讲的例子。  主角是 malloc
 
 
  */
@@ -29,7 +29,7 @@ int main(int argc, char** argv) {
 
     print(arr, SIZE);
 
-    free(arr)
+    free(arr);
 
     return EXIT_SUCCESS;
 } // Was fehlt in dieser Funktion (es sind mehrere Dinge)?  Fehler behandlung
