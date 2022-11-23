@@ -1,7 +1,21 @@
+/*
+没有加 & 的话， 就是 vordergrund ：   执行会 等待 知道返回 status
+
+加上 & 的话： 就是 background ： 关键是 要 识别这个 &       比如：    sleep 5&    --->  means sleep 5s in the background
+
+chdir(2)  就是 cd  命令
+
+jobs： 就是 把现在laufend  的 任务打印下来
+
+POSIX 就是 unix 的standard for example :  EXIT_SUCCESS  这个 宏
+
+*/
+
+
 
 
 /** To Do
- * - Promptsymbol ausgeben = "<Arbeitsverzeichnis>:" 就是把 当前的目录 给打印出来 done
+ * - Promptsymbol ausgeben = "<Arbeitsverzeichnis>:" 就是把 当前的目录 给打印出来 done  clash gibt als Promptsymbol das aktuelle Arbeitsverzeichnis (getcwd(3)) gefolgt von einem Doppelpunkt(:) aus
  * - Eine Zeile von der Standardeingabe einlesen.
  * - Zeile in Kommandoname und Argumente zerlegen.
  * - Trennzeichen: Leerzeichen und Tabulatoren
@@ -467,7 +481,7 @@ int main(void) {
 
 
     可以 看到 输入 sleep 5& 命令 之后， 进入background, 可以 立刻输入下一个命令  echo hallo world
-    但是 输入 sleep 5 之后， 没有进入background， 所以在输入 下一条命令 之前， 需要 等 5 秒才可以
+    但是 输入 sleep 5（没有加&） 之后， 没有进入background， 所以在输入 下一条命令 之前， 需要 等 5 秒才可以
 
     /root/Betriebssystem_workplace/u_8_2_clash_answer: sleep 5&
     /root/Betriebssystem_workplace/u_8_2_clash_answer: echo hallo world

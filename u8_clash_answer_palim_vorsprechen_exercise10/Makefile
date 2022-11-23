@@ -17,21 +17,21 @@ all: clash
 clash: clash.o plist.o
 	$(CC) -o clash clash.o plist.o
 
-# clash.o  的编译 需要 clash.c plist.h 
+# clash.o  的编译 需要 clash.c plist.h
 # gcc -c  是生成 .o 文件的
 # In clash.c wird plist.h inkludiert, und ist somit als Abhängigkeit anzugeben.
 clash.o: clash.c plist.h
-	$(CC) $(CFLAGS) -c clash.c    
+	$(CC) $(CFLAGS) -c clash.c
 
 
-# In plist.c wird plist.h inkludiert, und ist somit als Abhängigkeit anzugeben.
+# In plist.c wird plist.h inkludiert, und ist somit als Abhängigkeit anzugeben.（注意： plist.h 也为 plist.o 做贡献）
 plist.o: plist.c plist.h
 	$(CC) $(CFLAGS) -c plist.c
 
 # 按照题意，应该有一个 clean 标题， -f 是 force 的意思
 clean:
 	rm -f clash clash.o plist.o
-	
+
 .PHONY: all clean
 
 

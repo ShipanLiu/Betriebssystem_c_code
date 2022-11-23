@@ -12,8 +12,12 @@ Minhua Liu  108020210282
 #include <string.h>
 
 #define bufferMaxSize 102 // word_length + '\n' + '\0'
+// 不要 用global variable  因为你 不需要。
+// wann benutzen?    if needed  you don't know how big is this variable.
 
-static int wordNum = 0;
+
+
+static int wordNum = 0;   // 不要用 这个 ： global variable， 按照 alex 的答案 ， write sub function into main function
 
 
 // errno is set and exit with failure
@@ -99,7 +103,8 @@ static char** input() {
       }
     }
 
-    // put the word in the wordArr
+    // put the word in the wordArr(最好用 alex 答案上的 strdup function， 因为 strdup  会 自动调用 malloc)
+    // char *copiedWord = strdup(word);
     char* wordCpy = (char*)malloc((wordLength+1)*sizeof(char)); // create space for word + '\0'
     if(wordCpy == NULL) {
       kill("malloc");
@@ -119,6 +124,7 @@ static char** input() {
 
 
 
+//############### you don't have to use static for main fucntion
 int main() {
 
   //01-input
@@ -137,10 +143,38 @@ int main() {
   //04-free the space
   free(wordsArr);
 
-  //05-clean stdout
+  //05-clean stdout(可能还有点数据 再 stdout buffer 里面)
   if(EOF == fflush(stdout)){
     kill("fflush stdout");
   }
 
   exit(EXIT_SUCCESS);
 }
+
+
+
+/*
+Tutorial advices
+
+fgets()    return NULL for 1. EOF    2. Fehler (so you need the following code: )
+
+      if(ferror(stdin)) {
+	    kill("fgets -> stdin");
+	  }
+
+
+*/
+
+/*
+
+error handling for getchar() not needed
+
+don't handle error in handing error(in word too long functon to do the error handling-->  word too long 本身就是 erroe handling)
+
+
+
+
+
+
+
+*/
