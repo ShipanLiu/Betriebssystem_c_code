@@ -53,7 +53,7 @@ POSIX 就是 unix 的standard for example :  EXIT_SUCCESS  这个 宏
 #include <unistd.h>
 #include <stdbool.h>
 
-#include "plist.h"
+#include "plist.h"  // 注意不是 <plist.h>  而是 "plist.h"
 
 // Maximal sind 1337 Zeichen inkl. \n erlaubt.
 #define MAX_LINE 1337
@@ -91,12 +91,15 @@ static void print_prompt(void) {
      *
      *
      *
+       The getcwd() function copies an absolute pathname of the current
+       working directory to the array pointed to by buf, which is of
+       length size.
      *
      *
      *
      */
     while (1) {
-        cwd = realloc(cwd, len);  //pointer cwd 指向开辟的新的空间，
+        cwd = realloc(cwd, len);  //pointer cwd 指向开辟的新的空间，  !!!!!!!!!!!注意relloc 有 两个参数
         if (cwd == NULL) {
             die("realloc");
         }
@@ -168,6 +171,16 @@ static void collect_zombies(void) {
     // 返回 pid = 0 说明 kinder 还活着， 没有死
     // wir gucken ob es noch kinder Zombie gibt, wenn ja, dann nehmen wir das raus und gebe auch die drin stehende Connandozeile aus
     // wenn kein zombie kind nicht mehr findet, dann break die while Schleife
+    /*
+
+      你不用把 所有的 子进程 从 plist 里面 拿出来 （想拿也 拿不出来， 因为 pList 没有提供这个功能）
+      只能用 waitpid(-1, &status, WNOHANG))  -1  表示 目标是 所有的 子程序。
+    // pid = 0 : the zombie(child) still alive
+    // pid < 0 : error OR no zombies
+    // pid > 0 : zombies terminated
+
+
+     */
     while ((pid = waitpid(-1, &status, WNOHANG)) != 0) {
         // 进程号 一般都 大于0
         if (pid < 0) {
@@ -216,9 +229,9 @@ int main(void) {
         // 现在 要 新增 输入
         // Zeile von der Standardeingabe einlesen
         // MAX_LINE = 1337 Zeichen inkl. \n + 1 für \0
-        char buf[MAX_LINE + 1];  /* 因为需要 '\0' */
+        char buf[MAX_LINE + 1];  /* 因为需要 '\0' */   //!!!!!!!!!!!考试中没有必要 initialize， 因为你知道size
         // 从 stdin 里面读取， 并且 写入到buf 里面
-        if (fgets(buf, sizeof(buf), stdin) == NULL) {  // fgets()  如果读入错误或遇到文件结尾(EOF)，则返回NULL.
+        if (fgets(buf, sizeof(buf), stdin) == NULL) {  // fgets()  如果读入错误  或   遇到文件结尾(EOF，意思是这文件has no characters)，则返回NULL.
             // C 库函数 int feof(FILE *stream) 测试给定流 stream 的文件结束标识符。
             // 要记住，你最多输入1337个字符，在按下 回车之后 会加上  '\n' 和 EOF。
             // 我们要判断 返回 NULL 是读了EOF 还是 有错了
@@ -248,7 +261,7 @@ int main(void) {
                 c = fgetc(stdin);
             } while (c != EOF && c != '\n');
 
-            // Fehlerbehandlung fgetc()
+            // Fehlerbehandlung fgetc(),
             if(ferror(stdin))
                 die("fgetc");
 
@@ -263,7 +276,7 @@ int main(void) {
 
 
 
-        // 最后的\n entfernen，换成'\0'
+        // 最后的\n entfernen，换成'\0',  这里 不用定义 bufferLength,而是 直接用 最新的strlen(buf)-1, 高明（区别于 wsort 里面 移除 最后'\n' 的做法）
         buf[strlen(buf)-1] = '\0';
 
         /**
@@ -273,10 +286,12 @@ int main(void) {
          * 上面把 最后一个字符换成了 '\0' ， 再次调用strlen(buf) ， 长度不算 '\0'
          */
         bool background = false;
-        if (buf[strlen(buf)-1] == '&') {
-           buf[strlen(buf)-1] = '\0'; // 最后的\n entfernen，换成'\0'
+        if (buf[strlen(buf)-1] == '&') {  // buf[strlen(buf)-1]  这个时候 不是 '\0',  strlen(buf) 是 不会 计算 ‘\0‘ （上面刚刚赋予的）的
+           buf[strlen(buf)-1] = '\0'; // 就把 最后的& 移除  entfernen，接着换成换成'\0'
            background = true;
         }
+
+
 
 
 
@@ -337,7 +352,8 @@ int main(void) {
         int i = 0;
         char* argv[MAX_LINE/2+1 + 1 /* NULL */]; // argv【】 里面存的是字符串， 因为最后返回的 NULL 也要被保存
                                                  //  最多有 MAX_LINE/2+1 个部分， 因为buf是 zeichen + leerzeichen， 一半一半组成的
-        argv[i++] = strtok(buf, " \t"); // argv[0] 存 第一部分， 然后 i++， 第一部分一般是 commando
+        argv[i++] = strtok(buf, " \t"); // argv[0] 存 第一部分， 然后 i++， 这里的是（command 比如 cd）  argv[1， 2， 3...]  就是 parameters,
+                                        // 区别 之前 argv[0]， 之前的 argv[0] 指的是 你的编写的文件  比如 ./clash  , 这里 ./ 早就被执行过， 所以 argv[0]是 命令， 比如
         while ((argv[i++] = strtok(NULL, " \t")) != NULL) {
            continue;
         }
@@ -370,7 +386,7 @@ int main(void) {
             如果返回值 = 0，则表示 str1 等于 str2。
          */
 
-        // 假如是 "cd"  命令的话
+        // 假如是 "cd"  命令的话, 相同的话， strcmp 返回的值是 0
         if (strcmp(argv[0], "cd") == 0) {
               if (argv[1] == NULL || argv[2] != NULL) {
                   fprintf(stderr, "usage: cd <directory>\n"); // optional 或者 用perror("usage: cd <directory>\n wrong!!!")
@@ -422,7 +438,7 @@ int main(void) {
         // Hier sind wir im Elternprozess.
         /**
          * 在我们输入 buf 里面的命令了，假如最后结尾为 & , 说明这是一个 background ， 意思就是说让 kinder process
-         * 去执行， 所以要 假如 到 plist 里面的list 里面。
+         * 去执行， 所以要 加入 到 plist 里面的list 里面。
          *
          *
          *
@@ -441,7 +457,7 @@ int main(void) {
             }
         } else {
             /**
-             * 这里是 Vordergrund， 不想 background 有 有collect_zombies（） 函数 来清理 ， 我们这里需要自己去清理 dead kinder，这里是 父进程的区域，
+             * 这里是 Vordergrund， 不像 background 有 有collect_zombies（） 函数 来清理 ， 我们这里需要自己去清理 dead kinder，这里是 父进程的区域，
              * 所以我们就等待 kinderprocess 死亡
              * Vordergrundprozess
              * Auf Kind mit der PID warten, die wir von fork() bekommen haben.

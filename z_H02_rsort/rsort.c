@@ -64,6 +64,16 @@ static char** input() {
 	  }
 	  // if read EOF
       break;
+
+    /*
+
+    或者使用这个 组合！ 看 alex clash 的 答案  总结出 套路：
+      if (feof(stdin)) {
+          break;  // 如果是读到了 stdin， 那就 break 不 die
+      }
+      die("fgets");
+
+    */
 	}
 
     // get the real length of the word

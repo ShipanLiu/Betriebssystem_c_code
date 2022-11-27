@@ -20,11 +20,13 @@ clash: clash.o plist.o
 # clash.o  的编译 需要 clash.c plist.h
 # gcc -c  是生成 .o 文件的
 # In clash.c wird plist.h inkludiert, und ist somit als Abhängigkeit anzugeben.
+#因为 再 clash.c 文件里面 我们用到了 plist.h 文件。
 clash.o: clash.c plist.h
 	$(CC) $(CFLAGS) -c clash.c
 
 
-# In plist.c wird plist.h inkludiert, und ist somit als Abhängigkeit anzugeben.（注意： plist.h 也为 plist.o 做贡献）
+# In plist.c wird plist.h inkludiert, und ist somit als Abhängigkeit anzugeben.
+#（注意： plist.h 也为 plist.o 做贡献, 为什么呢？ 因为 plist.c  里面也有 #include "plist.h"）
 plist.o: plist.c plist.h
 	$(CC) $(CFLAGS) -c plist.c
 

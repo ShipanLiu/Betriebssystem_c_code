@@ -1,3 +1,11 @@
+/*
+T00.25
+
+Shipan Liu  108019201553
+Minhua Liu  108020210282
+
+*/
+
 #include <stdlib.h>
 #include <sys/types.h>
 #include <string.h>
@@ -33,6 +41,7 @@ int insertElement(pid_t pid, const char *cmdLine) {
 
 	while (lauf) {
 		if (lauf->pid == pid) {
+      // if duplicate pid, just return and do not insert
 			return -1;
 		}
 
