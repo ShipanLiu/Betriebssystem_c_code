@@ -17,7 +17,7 @@ int main(int argc, char** argv){ //expects call like './prog "echo this is a tes
     int max = 100; //arbitrary upper bound for no. of args, NEEDS to be at least 2, or while() below could access unallocated memory
     char* token[max]; // 存的是 从argv[0]  开始 的 所有的  即 token[0] = argv[0] ,argv[0] 是 我们写的 程序 比如 ./clash,  here we save our extracted tokens  就是 用 strtol（） 拆开的部分们
                       // argv[2]  就是 第一个 参数
-    if(argc < 2){ //no program to execute, abort   argv[0] 是 命令，  argv[1]  才是 第一个参数  可以写成 if(argv <= 1)
+    if(argc < 2){ //no program to execute, abort   argv[0] 是 ./prog 比如，  argv[1]  才是 “ls ./”  可以写成 if(argv <= 1)
         //Error handling
         exit(EXIT_FAILURE);
     }

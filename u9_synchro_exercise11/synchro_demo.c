@@ -7,10 +7,10 @@
 #include <errno.h>
 
 #include "sem.h"
-#include "list.h"  //这个就是本身 linux 自带的一个库
+#include "list.h"  //这个就是 第一题 自己 编的的一个题目。
 
 
-/*这里是 函数声明*/ 
+/*这里是 函数声明*/
 
 static void usage(void);
 
@@ -24,9 +24,9 @@ static void *search(void *arg);
 
 /**
  * Aufgabenstellung:
- * Parallel mehrere Dateien zeilenweise nach einem Suchstring durchsuchen. 
- * Gefundene Zeilen werden in eine Liste eingefügt und vom Hauptthread ausgegeben.
- * 
+ * Parallel mehrere Dateien zeilenweise nach einem Suchstring durchsuchen.  并发  找一个字符串。
+ * Gefundene Zeilen werden in eine Liste eingefügt und vom Hauptthread ausgegeben.  找到的行 被 push 到list 中， --》 最后 总thread 输出。
+ *
  * 就是我要在 不同多个 datei 里面找一个指定的 string， 每一datei 应该被分配一个 thread， 独立寻找这个 string
  *
  * Aufruf:
@@ -36,14 +36,20 @@ static void *search(void *arg);
 /**
  * Funktionen aus den Folien:
  * - int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void*), void *args);
+ * // 返回这个thread 本身的 thread 号。
  * - pthread_t pthread_self(void);
+ * // 终结 thread， 返回值 保存到 retval 里面
  * - void pthread_exit(void *retval);
- * 
+ *
+ * // 我一直在等这个 thread 死亡。
  * - int pthread_join(pthread_t thread, void **retvalp);
+ * // thread 自动死亡 回收， 但是 没有 值， 只有 返回一个int
  * - int pthread_detach(pthread_t thread);
  *
  * - SEM *semcreate(int initVal);
+ * // 减少 1 个
  * - void P(SEM *sem);
+ * // 增加 1 个
  * - void V(SEM *sem);
  * - void semDestroy(SEM *sem);
  */
@@ -60,36 +66,37 @@ static SEM *sem_found; // Signalisierung（发信号通知）, Sem um den Hauptt
 
 // 自定义一个结构体，名字叫： pthread_args  ， 作用：作为 pthread_create 的第四个参数， 主要利用里面的 char* file
 typedef struct pthread_args{
-    char *file;
+    char *file;  // 因为 thread 中运行的 查找函数 的 查找对象 是 以一个 string 为 参数的。
 } pthread_args;
 
 
 static char *search_pattern;
 static int active_threads;
 
-#define LINE_MAX (4094 + 1 + 1)
-
-
+#define LINE_MAX (4094 + 1 + 1) // '\n' + '\0'
 
 
 int main(int argc, char *argv[]) {
-	if(argc < 3) {
+	if(argc < 3) {   // ./synchro_demo  "jier" "t1.txt" "t2.txt"....
+                   // 当 argc = 2 的时候， 只有 ./synchro_demo  "jier",  argv[0] = ./synchro_demo  argv[1] = "jier"
+                   // 你必须 提供 至少一个 文件去查找。
 		usage();
 	}
-    
+
     // TODO: initialize variables
 
 
     sem_mutex = semCreate(1);
     if(sem_mutex == NULL)
         err("semCreate() failed");
-    
-    sem_found = semCreate(0);
+
+    sem_found = semCreate(0);  // 初始 值 为 0， 只有在 insert 之后 才 +1， 保障 remove 在 insert 之后 发生
+                               //（因为 remove 发现 sem_found 的值是0 的 时候， 是 无法remove 的。）
     if(sem_found == NULL)
         err("semCreate() failed");
 
-	search_pattern = argv[1];  // argv[0] 是 命令   argv[1] 是 要找的string， 这里命名为 search_pattern
-	active_threads = argc-2;  // argc 是 main 参数的个数， 这里 argc-2   代表一共有多少个datei， 那就创建多少个 thread
+	search_pattern = argv[1];  // argv[0] 是 ./synchro_demo,   argv[1] 是 要找的string， 这里命名为 search_pattern
+	active_threads = argc-2;  // argc 是 main 参数的个数， 这里 argc-2   代表一共有多少个datei， 那就创建多少个 thread, easy
 
     /**
      * Struktur-Array, um für jeden der erstellten Threads eine Struktur zu haben.
@@ -98,8 +105,9 @@ int main(int argc, char *argv[]) {
      */
     pthread_args args[active_threads];  // 因为在 使用pthread_create()的时候，里面的第四个参数 是 应该是一个 struktur 结构体
                                         // args[] 是一个数组， 里面盛放的是 pthread_args 类型（我们自定义的 struct）
-    
-	
+                                        // pthread_args 是 我们上面 定义 的struct pthread_args
+
+
     /**
      * In Schleife über alle Dateien laufen, die wir durchsuchen sollen.
      * Dabei wird das Struktur-Element mit dem Dateinamen initialisiert.
@@ -108,7 +116,8 @@ int main(int argc, char *argv[]) {
      */
     for(int i=2; i<argc; i++){
         args[i-2].file = argv[i]; // 把datei的name 放进了 args[0] 里面
-    
+
+        // 因为在 for 里面， 所以 每一次都会 创建一个新的 tid， 虽然名字一样， 但是 地在栈里面的地址是不一样的。
         pthread_t tid;
         errno = pthread_create(&tid, NULL, &search, &args[i-2]); // "search()"   will use   "args[i-2]"   as it's parameter
                                                                 // pthread_create 成功返回0，顺便把 errno 初始化， 不成功返回 “错误值”，
@@ -116,7 +125,7 @@ int main(int argc, char *argv[]) {
         if(errno != 0)
             die("pthread_create");
     }
-    
+
     /**
      * Main wartet, dass das Wort gefunden wurde.
      * -> Sie ruft P(sem_found) auf.
@@ -130,25 +139,25 @@ int main(int argc, char *argv[]) {
     *
 	char *line;
 	do {
-        P(sem_found); // before removing, we have to know if the list is emply or not, so we use signals
+      P(sem_found); // before removing, we have to know if the list is emply or not, so we use signals
                         // 初始化的sem_found 为0， 信号不能为负值， 你现在 P(sem_found), sem_found 还是保持 0 不变，
-                        // 因为 sem_found 是0， 说明 在list 里面没有东西， 所以从这里开始， 之后的代码 sleep 知道sem_found 变为1
+                        // 因为 sem_found 是0， 说明 在list 里面没有东西， 所以从这里开始， 之后的代码 sleep 直到sem_found 变为1
 
 
 
 
-        P(sem_mutex); 
-		line = removeElement(); // 在removeElement的时候， 也要schutzen
+      P(sem_mutex);
+		  line = removeElement(); // 在removeElement的时候， 也要schutzen
         V(sem_mutex);
-        
-		if(line != NULL) {
-			printf("%s", line); // 从list里面拿出来之后，输出
-			free(line);
-		}
+
+		  if(line != NULL) {
+			  printf("%s", line); // 从list里面拿出来之后，输出
+			  free(line);
+		  }
 	} while(line != NULL);
 
 	printf("done\n");
-    
+
     semDestroy(sem_mutex);
     semDestroy(sem_found);
 }
@@ -160,15 +169,15 @@ int main(int argc, char *argv[]) {
 
  // soll nach den 'search_pattern' durchsuchen
 static void *search(void *a) {
-    
+
     // TODO: Pfad holen
     // thread 自动回收
     errno = pthread_detach(pthread_self); // Rückgabewert wird nicht benötigt, Thread räumt sich nach Terminierung selbst auf.
     if(errno != 0)
         die("pthread_detach()");
-    
+
     pthread_args *arg = (pthread_args *)a;  //这里的 a 就是 上面定义的 &args[i-2]， 要首先 cast 成 pthread_args* 类型
-    
+
 	char *path = arg->file;
 
 	FILE *file = fopen(path, "r");
@@ -185,7 +194,7 @@ static void *search(void *a) {
     // haystack -- 要被检索的 C 字符串。
     // needle -- 在 haystack 字符串内要搜索的小字符串。
     // 该函数返回在 haystack 中第一次出现 needle 字符串的位置，如果未找到则返回 null。
-    
+
 	char buf[LINE_MAX];
 	while(fgets(buf, sizeof(buf), file) != NULL) {
 		if(strstr(buf, search_pattern) != NULL) {  //  找到了，
@@ -206,14 +215,14 @@ static void *search(void *a) {
 	if(0 != fclose(file)) {
 		die("fclose");
 	}
-    
+
     /**
      * Falls das, was wir suchen, in keiner Datei vorhanden ist, würde der Hauptthread ewig warten und nie terminieren.
      * Also sorgen wir dafür, dass der letzte Thread einmal mehr V() aufruft und den Hauptthread so in jedem Fall am Ende weckt.
      * Dieser nimmt ein Element aus der leeren Liste, bekommt NULL zurück, beendet die Schleife und räumt auf.
      */
-    
-    P(sem_mutex);  // 
+
+    P(sem_mutex);  //
 
     active_thread--;  // active_thread 是全局变量，操作需要上锁，可能多个 thread 同时进行 active_thread--， 所以用 P和V锁起来（limitieren）
     if(active_threads == 0){   // dh. wir waren das letze Thread
@@ -222,8 +231,8 @@ static void *search(void *a) {
     }
 
     V(sem_mutex);
-    
-    
+
+
 	return NULL;
 }
 
