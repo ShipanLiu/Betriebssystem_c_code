@@ -171,15 +171,18 @@ int main(int argc, char *argv[]) {
 static void *search(void *a) {
 
     // TODO: Pfad holen
-    // thread 自动回收
+    // thread 自动回收, 反正是 自动回收， 上来 就把 自动回收 放到 这里。 保险
+    // pthread_detach 函数 成功了话， 返回的值就是 0
     errno = pthread_detach(pthread_self); // Rückgabewert wird nicht benötigt, Thread räumt sich nach Terminierung selbst auf.
+    // 假如 errno 不保持 为 0 的话， 那就说明出问题了。
     if(errno != 0)
         die("pthread_detach()");
-
+    // 把 传入 来的 void* 类型的 a    cast成 pthread_args*  类型的
     pthread_args *arg = (pthread_args *)a;  //这里的 a 就是 上面定义的 &args[i-2]， 要首先 cast 成 pthread_args* 类型
 
 	char *path = arg->file;
 
+  // 注意， 有 fopen 就必定有 fclose
 	FILE *file = fopen(path, "r");
 	if(file == NULL) {
 		die("fopen");
@@ -198,20 +201,23 @@ static void *search(void *a) {
 	char buf[LINE_MAX];
 	while(fgets(buf, sizeof(buf), file) != NULL) {
 		if(strstr(buf, search_pattern) != NULL) {  //  找到了，
-            P(sem_mutex); // 占用 sem_mutex，上锁
-			if(-1 == insertElement(buf)) {    // 插入到list 里面
+      P(sem_mutex); // 占用 sem_mutex，上锁
+			if(-1 == insertElement(buf)) {    // 插入到list 里面， 这个 insertElement 就是 clash 作业里面 plist.c  中的 函数
 				err("insertElement() failed");
 			}
             V(sem_mutex); //释放 sem_mutex
+            // 根据题目的要求， 你只要 insert 了之后， haupt thread 就会 开始及逆行remove
             V(sem_found); //你加入到了 list 里面， 说明list 不是空， 所以为了 不要让 main 函数里面的 thread 一直
                             //在那里卡着， 我V(sem_found)， 之后sem_found 变成1， main 里面的 thread 可以进行，执行 removeElement
 		}
 	}
 
+  //这是 fgets 的 error handling
 	if(ferror(file)) {
 		die("fgets");
 	}
 
+  // 有始有终， 有fopen 就有 fclose
 	if(0 != fclose(file)) {
 		die("fclose");
 	}
@@ -223,11 +229,11 @@ static void *search(void *a) {
      */
 
     P(sem_mutex);  //
-
+    // active_thread 的值 代表 现在还有 多少个 file 没有被 执行完成。
     active_thread--;  // active_thread 是全局变量，操作需要上锁，可能多个 thread 同时进行 active_thread--， 所以用 P和V锁起来（limitieren）
     if(active_threads == 0){   // dh. wir waren das letze Thread
         V(sem_found);          // wir mochten das haupte Thread in main() auch weg, deswegen 我们想要唤醒 main thread， 让
-                                // main 函数里面 直接进行 semDestroy() ， 自行销毁， 因为list 里面肯定没有元素了， 返回的line 是 NULL
+                              // main 函数里面 直接进行 semDestroy() ， 自行销毁， 因为list 里面肯定没有元素了， 返回的line 是 NULL
     }
 
     V(sem_mutex);
