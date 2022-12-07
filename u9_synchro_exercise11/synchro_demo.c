@@ -57,7 +57,7 @@ static void *search(void *arg);
 // TODO: global variables, defines, etc.
 
 /*
-这里用到了两个 semaphore 信号量
+这里用到了两个 semaphore 信号量, 这两个 信号量 必须是 global variable
 sem_mutex 的作用是 进行 进程之间的互斥， 保证 在一个thread 运行的情况下， 其他的thread 等待
 sem_found 的作用是： 在main 里面 的thread 执行 removeElement（） 之前保证 list 里面东西。（即保证 要先 insert， 再remove）
 */
@@ -152,6 +152,7 @@ int main(int argc, char *argv[]) {
 
 		  if(line != NULL) {
 			  printf("%s", line); // 从list里面拿出来之后，输出
+        // 我认为 这里的line 不应该被 free
 			  free(line);
 		  }
 	} while(line != NULL);
@@ -198,6 +199,7 @@ static void *search(void *a) {
     // needle -- 在 haystack 字符串内要搜索的小字符串。
     // 该函数返回在 haystack 中第一次出现 needle 字符串的位置，如果未找到则返回 null。
 
+    // 问题：  这里是不是 不应该 用while， 而是应该用 if。
 	char buf[LINE_MAX];
 	while(fgets(buf, sizeof(buf), file) != NULL) {
 		if(strstr(buf, search_pattern) != NULL) {  //  找到了，
@@ -218,7 +220,7 @@ static void *search(void *a) {
 	}
 
   // 有始有终， 有fopen 就有 fclose
-	if(0 != fclose(file)) {
+	if(0 != fclose(file)) {  // or(fclose(file) == EOF)
 		die("fclose");
 	}
 
