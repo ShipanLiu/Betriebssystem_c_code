@@ -240,6 +240,7 @@ static void *search(void *a) {
 
     V(sem_mutex);
 
+  // 不要忘记， 一定要 return NULL
 
 	return NULL;
 }

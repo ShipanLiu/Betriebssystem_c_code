@@ -1,67 +1,37 @@
+
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
 #include <pthread.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <string.h>
 
-static void die(char* msg) {
-  perror(msg);
-  exit(EXIT_FAILURE);
-}
+//  我想 测试 pthread_create的基本操作。  问什么 函数进不去？
 
-static void warn(char* msg) {
-  fputs(msg, stderr);
-}
+typedef struct arg{
+    int num;
+} arg;
 
-static int checkLine(char* str) {
-  // copy the str for later compare
-  char* strCpy = strdup(str);
-  if(strCpy == NULL) {
-    die("strdup");
-  }
-  //check if space exists or not
-  char *afterToken = strtok(str, " \t");
-  //if there exists space, then return 0
-  return strcmp(afterToken, strCpy) == 0 ? 1 : 0;
-}
 
-static void getPoints(char* str) {
-    int index = 0;
-    int i = 0;
-    int pointArr[6];
-    while(i<6) {
-        if(i == 0) {
-          pointArr[index] = (int)(strtok(str, ",")[1]);
-        } else {
-            char temp[2] = strtok(NULL, ",");
-            if(i%2 != 0) {
-                pointArr[index] = (int)temp[0];
-            }else {
-                pointArr[index] = (int)temp[1];
-            }
-        }
-        index++;
-        i++;
-    }
+static void *fun(void* a) {
+
+
+    printf("get in\n");
+
+    arg* myArg = (arg*)a;
+    printf("%d\n", myArg->num);
+
+    pthread_detach(pthread_self());
+    return NULL;
 
 }
 
-
-
-int main(int argc, char* argv[]) {
-
-  char input[] = "(1,1),(1,1),(1,1)";
-//   printf("%s\n", checkLine(input) == 1 ? "good string" : "bad string");
-
-//   int v1x;
-//   int v1y;
-//   char* firstItem = strtok(input, ",");
-//   printf("%s\n", firstItem);
-
-  // getPoints(input);
-  printf("jier");
-
-
-
-  exit(EXIT_SUCCESS);
+int main()
+{
+    pthread_t tid;
+    arg parameter;
+    parameter.num = 99;
+    errno = pthread_create(&tid, NULL, fun, &parameter);
+    // pthread_join(tid, NULL);
+    printf("over\n");
+    return 0;
 }

@@ -11,15 +11,18 @@
 #define MAX_LINE_SIZE 20
 
 // for the general atomic operation
-static SEM* sem1;
+static SEM *sem1;
 // controll if the max number of thread exceeds
-static SEM* sem2;
+static SEM *sem2;
 //maxmal thread
-static unsigned int max_num;
+static int max_num;
+
+// define a function pointer for using in the following struct
+typedef void (*callbackFunction)(int a, int b);
 
 typedef struct threadFunction_arg {
   struct triangle* tri;
-  void *callback;
+  callbackFunction callback;
 }threadFunction_arg;
 
 static void die(char* msg) {
@@ -32,60 +35,29 @@ static void warn(char* msg) {
 }
 
 
-static int checkLine(char* str) {
-  // copy the str for later compare
-  char* strCpy = strdup(str);
-  if(strCpy == NULL) {
-    die("strdup");
-  }
-  //check if space exists or not
-  char *afterToken = strtok(str, " \t");
-  //if there exists space, then return 0
-  return strcmp(afterToken, strCpy) == 0 ? 1 : 0;
-}
-
-
-// convert a line to the format of argument for function threadFunction()
-static struct triangle convertLineToStructTriangle(char* str) {
-    int arr[6];
-    int index = 0;
-    sscanf(&(strtok(str, ",")[1]), "%d", &arr[index]);
-    printf("%c\n", arr[index]);
-    index++;
-    for(int i=1; i<=5; i++) {
-        if(i%2 != 0) {
-            sscanf(&(strtok(NULL, ",")[0]), "%d", &arr[index]) ;
-            // printf("%d\n", arr[index]);
-        } else {
-            sscanf(&(strtok(NULL, ",")[1]), "%d", &arr[index]) ;
-            // printf("%d\n", arr[index]);
-        }
-        index++;
-    }
-
-    struct triangle tri;
-
-    for(int i=0; i<3; i++) {
-      struct coordinate cordi;
-      cordi.x = arr[2*i];
-      cordi.y = arr[2*i+1];
-      tri.point[i] = cordi;
-    }
-
-    // return a struct
-    return tri;
-
-}
-
-
 // callback function
 static void callback(int boundary, int interior) {
-
+  printf("callback is called\n");
+  // printf("sum: %d\n", boundary + interior);
+  //avoid printf functon
+  int sum = boundary + interior;
+  fprintf(stdout, "%d", sum);
 }
+
+// static void *fun(void *a) {
+//   threadFunction_arg* arg = (threadFunction_arg*)a;
+//   printf("x0: %d\n", arg->tri->point[0].x);
+//   printf("y0: %d\n", arg->tri->point[0].y);
+
+//   return NULL;
+// }
 
 
 // the thread function in pthread_create()
 static void *threadFunction(void *a) {
+
+  //!!!!!!!!!!test
+  printf("in threadFunction: one thread created\n");
 
   // passive wait
   errno = pthread_detach(pthread_self);
@@ -96,7 +68,9 @@ static void *threadFunction(void *a) {
   threadFunction_arg* arg = (threadFunction_arg*)a;
 
   countPoints(arg->tri, arg->callback);
+  printf("countPoints executed in threadFunction\n");
 
+  return NULL;
 }
 
 
@@ -108,7 +82,8 @@ int main(int argc, char* argv[]) {
     exit(EXIT_FAILURE);
   }
 
-  max_num = argv[1];
+// get the maxmal number of threads
+  sscanf(argv[1], "%d", &max_num);
 
   // create SEM
   sem1 = semCreate(1);
@@ -139,24 +114,49 @@ int main(int argc, char* argv[]) {
       }
     }
     // reset the errno before creating the thread
-    errno = 0;
+    // errno = 0;
 
     // get rid of the \n at the end
-    lineBuffer[sizeof(lineBuffer)-1] = '\0';
+    lineBuffer[strlen(lineBuffer)-1] = '\0';
+
+    //!!!!!!!!!!test
+    printf("the length of the line is: %d\n", (int)strlen(lineBuffer));
+    printf("line: %s\n", lineBuffer);
+
+    // check the form
+    int arr[6];
+    if(6 != sscanf(lineBuffer, "(%d,%d),(%d,%d),(%d,%d)", &arr[0],&arr[1],&arr[2],&arr[3],&arr[4],&arr[5])) {
+      warn("bad line");
+      break;
+    }
+
+    //!!!!!!!!!!test
+    for(int i=0; i<6; i++) {
+      printf("%d,", arr[i]);
+    }
+    printf("\n");
+
+    struct triangle tri;
+
+    for(int i=0; i<3; i++) {
+      struct coordinate cordi;
+      cordi.x = arr[2*i];
+      cordi.y = arr[2*i+1];
+      tri.point[i] = cordi;
+    }
+
+    //create the parameter for the thread function
+    threadFunction_arg arg;
+    arg.tri = &tri;
+    // callback is a function pointer
+    arg.callback = callback;
 
     //create the thread for each line
     pthread_t tid;
-
-    // create args for the threadFunction
-    struct triangle tri = convertLineToStructTriangle(lineBuffer);
-
-    //create
-    threadFunction_arg arg;
-    arg.tri = &tri;
-    arg.callback = callback;
-
-
     errno = pthread_create(&tid, NULL, &threadFunction, &arg);
+    printf("errno: %d\n", errno);
+    printf("pthread_create should execute\n");
+    pthread_join(tid, NULL);
 
   }
 
@@ -182,5 +182,5 @@ int main(int argc, char* argv[]) {
 
 
 
-  exit(EXIT_SUCCESS);
+  // exit(EXIT_SUCCESS);
 }

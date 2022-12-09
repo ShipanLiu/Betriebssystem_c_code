@@ -95,7 +95,7 @@ static void collectZombies() {
     // pid > 0 : zombies terminated
 
     if(pid == 0) {
-    // pid = 0 : the zombie(child) still alive
+    // pid = 0 : the zombie(child) still alive, 这个 在 写的时候 忘记了
       break;
     }
 
@@ -111,7 +111,7 @@ static void collectZombies() {
     }
 
     // the job in the plist was already removed the '\n'
-    char job[MAX_COMMAND_SIZE];
+    char job[MAX_COMMAND_SIZE + 1];  // 因为有 '\0' 在最后
 
     if(removeElement(pid, job, sizeof(job)) < 0) {
       // pid not found or plist is empty
@@ -242,6 +242,7 @@ int main() {
         myWarn("jobs");
       } else {
         // do walklist
+        // void walkList(int (*callback) (pid_t, const char *))
         walkList(printJobs);
       }
       // continue for new input;
