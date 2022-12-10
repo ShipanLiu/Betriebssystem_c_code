@@ -8,14 +8,27 @@
 #include "triangle.h"
 #include "sem.h"
 
-#define MAX_LINE_SIZE 20
+#define MAX_LINE_SIZE 100
 
 // for the general atomic operation
+static SEM *sem0;
 static SEM *sem1;
 // controll if the max number of thread exceeds
 static SEM *sem2;
+// for the atomic operation of the threadNumber
+static SEM *sem3;
+// for max_num threads
+static SEM *sem4;
 //maxmal thread
 static int max_num;
+
+// boundary and interior
+static int bnodeSum;
+static int inodeSum;
+//the sum of nodes in a triangle
+static int nodeSum;
+//the thread number
+static int threadNumber = 0;
 
 // define a function pointer for using in the following struct
 typedef void (*callbackFunction)(int a, int b);
@@ -37,41 +50,87 @@ static void warn(char* msg) {
 
 // callback function
 static void callback(int boundary, int interior) {
-  printf("callback is called\n");
-  // printf("sum: %d\n", boundary + interior);
-  //avoid printf functon
-  int sum = boundary + interior;
-  fprintf(stdout, "%d", sum);
+  bnodeSum += boundary;
+  inodeSum += interior;
+  nodeSum += (boundary + interior);
 }
 
-// static void *fun(void *a) {
-//   threadFunction_arg* arg = (threadFunction_arg*)a;
-//   printf("x0: %d\n", arg->tri->point[0].x);
-//   printf("y0: %d\n", arg->tri->point[0].y);
 
-//   return NULL;
-// }
+static void *outputThreadFunction(void *a) {
+  errno = pthread_detach(pthread_self());
+  if(errno != 0) {
+    die("pthread_detach");
+  }
+
+  P(sem2);
+  fprintf(stdout, "the boundary node number: %d\n", bnodeSum);
+  fprintf(stdout, "the interior node number: %d\n", inodeSum);
+  fprintf(stdout, "the thread number is: %d\n", threadNumber);
+  fprintf(stdout, "the node number is %d\n", nodeSum);
+  fprintf(stdout, "================================================\n");
+  bnodeSum = 0;
+  inodeSum = 0;
+  nodeSum = 0;
+
+  max_num++;
+  V(sem4);
+  threadNumber--;
+
+  V(sem0);
+
+
+  // the main function can continue
+  if(threadNumber == 0) {
+    V(sem3);
+  }
+  return NULL;
+
+}
+
+
+
+
+
+
 
 
 // the thread function in pthread_create()
 static void *threadFunction(void *a) {
 
-  //!!!!!!!!!!test
-  printf("in threadFunction: one thread created\n");
-
   // passive wait
-  errno = pthread_detach(pthread_self);
+  errno = pthread_detach(pthread_self());
   if(errno != 0) {
     die("pthread_detach");
   }
 
   threadFunction_arg* arg = (threadFunction_arg*)a;
 
-  countPoints(arg->tri, arg->callback);
-  printf("countPoints executed in threadFunction\n");
 
+  P(sem1);
+  P(sem0);
+
+  countPoints(arg->tri, arg->callback);
+  threadNumber--;
+  // the output thread can start
+  V(sem2);
+  max_num++;
+  V(sem4);
+
+  V(sem1);
   return NULL;
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -86,6 +145,11 @@ int main(int argc, char* argv[]) {
   sscanf(argv[1], "%d", &max_num);
 
   // create SEM
+  sem0 = semCreate(1);
+  if(sem0 == NULL) {
+    die("semCreate");
+  }
+
   sem1 = semCreate(1);
   if(sem1 == NULL) {
     die("semCreate");
@@ -96,8 +160,18 @@ int main(int argc, char* argv[]) {
     die("semCreate");
   }
 
+  sem3 = semCreate(0);
+  if(sem3 == NULL) {
+    die("semCreate");
+  }
+
+  sem4 = semCreate(1);
+  if(sem4 == NULL) {
+    die("semCreate");
+  }
+
   // open file "16boundary-13interior"
-  FILE* file = fopen("16boundary-13interior", "r");
+  FILE* file = fopen("578boundary-643interior", "r");
   if(file == NULL) {
     die("fopen");
   }
@@ -113,28 +187,25 @@ int main(int argc, char* argv[]) {
         break;
       }
     }
-    // reset the errno before creating the thread
-    // errno = 0;
 
     // get rid of the \n at the end
     lineBuffer[strlen(lineBuffer)-1] = '\0';
 
-    //!!!!!!!!!!test
-    printf("the length of the line is: %d\n", (int)strlen(lineBuffer));
-    printf("line: %s\n", lineBuffer);
+    //!!!test
+    // printf("line: %s\n", lineBuffer);
 
     // check the form
     int arr[6];
-    if(6 != sscanf(lineBuffer, "(%d,%d),(%d,%d),(%d,%d)", &arr[0],&arr[1],&arr[2],&arr[3],&arr[4],&arr[5])) {
-      warn("bad line");
-      break;
+    int result = sscanf(lineBuffer, "(%d,%d),(%d,%d),(%d,%d)", &arr[0],&arr[1],&arr[2],&arr[3],&arr[4],&arr[5]);
+    // printf("result: %d\n", result);
+
+
+    if(6 != result) {
+      warn("bad line\n");
+      continue;
     }
 
-    //!!!!!!!!!!test
-    for(int i=0; i<6; i++) {
-      printf("%d,", arr[i]);
-    }
-    printf("\n");
+
 
     struct triangle tri;
 
@@ -152,35 +223,48 @@ int main(int argc, char* argv[]) {
     arg.callback = callback;
 
     //create the thread for each line
+    P(sem4);
     pthread_t tid;
     errno = pthread_create(&tid, NULL, &threadFunction, &arg);
-    printf("errno: %d\n", errno);
-    printf("pthread_create should execute\n");
-    pthread_join(tid, NULL);
+    if(errno != 0) {
+      die("pthread_create");
+    }
+    threadNumber++;
+    max_num--;
 
+    if(max_num > 0) {
+        V(sem4);
+    }
+
+    P(sem4);
+    pthread_t tid_output;
+    errno = pthread_create(&tid_output, NULL, outputThreadFunction, NULL);
+    if(errno != 0) {
+      die("pthread_create");
+    }
+    threadNumber++;
+    max_num--;
+
+    if(max_num > 0) {
+        V(sem4);
+    }
   }
 
 
-
-
-
-
-
-
-
+  // now the main function can continue
+  P(sem3);
+  printf("finished!\n");
 
   // close file
   if(EOF == fclose(file)) {
     die("fclose");
   }
 
+  semDestroy(sem0);
+  semDestroy(sem1);
+  semDestroy(sem2);
+  semDestroy(sem3);
+  semDestroy(sem4);
 
-
-
-
-  // read file in while-loop + checkLine + checkTriangle + create Thread.
-
-
-
-  // exit(EXIT_SUCCESS);
+  exit(EXIT_SUCCESS);
 }
