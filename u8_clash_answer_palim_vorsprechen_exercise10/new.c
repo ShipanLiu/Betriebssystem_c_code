@@ -42,12 +42,16 @@ int main(int argc, char* argv[]) {
     }
 
     if(S_ISLINK(sb.st_mode)) {
-      print(de->d_name);
+      if(printf("%s", de->d_name) < 0) {
+        die("printf");
+      }
     }
 
-  } while(de);
+  } while(1);
 
-
+  if(fflush(stdout)) {
+    die("fflush");
+  }
 
   return 0;
 }
