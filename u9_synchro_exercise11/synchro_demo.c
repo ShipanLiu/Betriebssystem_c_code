@@ -119,7 +119,7 @@ int main(int argc, char *argv[]) {
 
         // 因为在 for 里面， 所以 每一次都会 创建一个新的 tid， 虽然名字一样， 但是 地在栈里面的地址是不一样的。
         pthread_t tid;
-        errno = pthread_create(&tid, NULL, &search, &args[i-2]); // "search()"   will use   "args[i-2]"   as it's parameter
+        errno = pthread_create(&tid, NULL, search, &args[i-2]); // "search()"   will use   "args[i-2]"   as it's parameter
                                                                 // pthread_create 成功返回0，顺便把 errno 初始化， 不成功返回 “错误值”，
                                                                 // 正好把 errno 设置一下， so that yo can use "perror()"
         if(errno != 0)
