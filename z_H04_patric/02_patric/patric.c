@@ -1,3 +1,12 @@
+/*
+T00.25
+
+Shipan Liu  108019201553
+Minhua Liu  108020210282
+
+*/
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -29,6 +38,8 @@ static int inodeSum;
 static int nodeSum;
 //the thread number
 static int threadNumber = 0;
+//the closed thread number
+static int closedThreadNumber = 0;
 
 // define a function pointer for using in the following struct
 typedef void (*callbackFunction)(int a, int b);
@@ -66,7 +77,7 @@ static void *outputThreadFunction(void *a) {
   fprintf(stdout, "the boundary node number: %d\n", bnodeSum);
   fprintf(stdout, "the interior node number: %d\n", inodeSum);
   fprintf(stdout, "the thread number is: %d\n", threadNumber);
-  fprintf(stdout, "the node number is %d\n", nodeSum);
+  fprintf(stdout, "the closed thread number is %d\n", closedThreadNumber);
   fprintf(stdout, "================================================\n");
   bnodeSum = 0;
   inodeSum = 0;
@@ -75,6 +86,7 @@ static void *outputThreadFunction(void *a) {
   max_num++;
   V(sem4);
   threadNumber--;
+  closedThreadNumber++;
 
   V(sem0);
 
@@ -111,6 +123,7 @@ static void *threadFunction(void *a) {
 
   countPoints(arg->tri, arg->callback);
   threadNumber--;
+  closedThreadNumber++;
   // the output thread can start
   V(sem2);
   max_num++;

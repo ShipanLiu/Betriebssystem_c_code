@@ -1,3 +1,5 @@
+// done by shipan at 04.01.2023
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,9 +19,12 @@
 int main(int argc, char *argv[]) {
 	printList();
 
+
+  //四次 malloc  + frei geben
+
 	char *m1 = malloc(200*1024);
 	printList();
-    
+
 	char *m2 = malloc(200*1024);
 	printList();
 
@@ -41,6 +46,11 @@ int main(int argc, char *argv[]) {
 	free(m4);
 	printList();
 
+
+
+
+
+// 四次malloc + freigeben。
 	m1 = malloc(100*1024);
 	printList();
 
@@ -64,8 +74,8 @@ int main(int argc, char *argv[]) {
 
 	free(m4);
 	printList();
-    
-    // Randfall
+
+    // Randfall, Randfall 就是 badcase,   比如  gave malloc() a 0  比如  give ralloc a NULL pointer
     m1 = realloc(NULL, 1000*1024);
     printList();
 

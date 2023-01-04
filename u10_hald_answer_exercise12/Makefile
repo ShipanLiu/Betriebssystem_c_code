@@ -1,3 +1,5 @@
+# done by shipan liu at 04.01.2023
+
 CFLAGS=-Wall -Werror -std=c11 -pedantic -D_XOPEN_SOURCE=700
 CC=gcc
 
@@ -5,6 +7,9 @@ CC=gcc
 .PHONY: all clean # optional
 
 all: test test-ref # optional
+
+
+# erstellen Sie ein Makefile, welches die Targets  "test" and "test-ref" unterstützt
 
 test: test.o halde.o
 	${CC} -o test test.o halde.o
