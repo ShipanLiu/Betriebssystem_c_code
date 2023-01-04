@@ -40,7 +40,7 @@
 struct mblock {
 	struct mblock *next; // 里面存放的是 MAGIC
 	size_t size;//  存放 die Größe von nachfolgende Block
-	char storage[];
+	char storage[]; // 这里面 存的是 跟 die Adresse von allocated Speicher（ 比如m1， 见Ubung page13） 有关
 };
 
 ///这就是 一整个 区域 Heap-memory area.
@@ -122,7 +122,7 @@ void *malloc (size_t size) {
     //  现在 *head  找了一个替身， 为malloc 一块内容 做准备
     struct mblock *lauf = head; // Laufzeiger
     // pre_next里面存的是 head pointer 的地址，  *(prev_next) = *header , 即header pointer 本身
-    struct mblock **prev_next = &head; // Schleppzeiger(拖拉指针), hilfreich bei der Verkettung, wenn ein Element herausgenommen wird.
+    struct mblock** prev_next = &head; // Schleppzeiger(拖拉指针), hilfreich bei der Verkettung, wenn ein Element herausgenommen wird.
 
     // 问题： 为什么有这么多 struct mblock 来供 lauf->next,  因为可能之前 malloc 了很多次， 也free 了很多次， 但是在free 之后， malloc 之前创建的 struct block 并不会
     // 消失， 而且其中还保存着 之前 负责的 “内容块” 的 size， 这也就是为什么可以获得  lauf->size
@@ -148,9 +148,12 @@ void *malloc (size_t size) {
         return NULL;
     }
 
+    // 走到这一步， 就说明 lauf 就是我们需要得 struct mblock,
     // Falls nicht genug Speicher zum Aufteilen vorhanden ist, geben wir den ganzen Block heraus.
     // Der vorherige Next-Pointer zeigt nun auf das nachfolgende Element.
     // Das Element, das den für uns passenden Speicher verwaltet, ist also nicht mehr in der Verkettung (wurde einfach übersprungen).
+    // 这个block的大小只够 存 这 10bytes 的，剩余的空间(falls vorhandeln)， 不够再开发了， 所以将这个整个block 踢出去。
+    // *prev_next 就是 head pointer， 因为 lauf 这个整个 block 被踢了出去(从linked list)，所以就不考虑lauf了，直接更新 header 指向 lauf->next
     if( (lauf->size - size) <= sizeof(struct mblock)){
         *prev_next = lauf->next;
     } else {
@@ -164,19 +167,29 @@ void *malloc (size_t size) {
                                                           ^ lauf->storage ist hier
                                                                         ^ lauf-storage + size ist hier (size = 10) -> ist der Ort für das nächste Element
          */
+
+        //lauf->storage 就是一个地址(相当于 base)，lauf->storage + size 里面得size 相当于 偏移量。
         struct mblock* neu = (struct mblock*) (lauf->storage + size);
 
         // siehe Beispiel: neue Größe =  gefundene Größe (=25) - gewünschte Größe (=10) - Blockgröße (=5, im Beispiel)
-        neu->size = lauf->size - size - sizeof(struct mblock);
-        neu->next = lauf->next; // Verkettung herstellen
-
-        *prev_next = neu; // Verkettung herstellen
+        // 下面计算剩下得大小。
+        neu->size = lauf->size - size - sizeof(struct mblock); // sizeof(struct mblock) 是新 struct mblock 大小。
+        neu->next = lauf->next; // Verkettung herstellen， 因为 lauf 被踢出去了，在被踢出去之前， 把 lauf->next 下一个元素交接给 neu->next，表明 lauf 这个 lock完成使命， 被踢出去， neu 接上， 以便list不断
+        // *prev_next 就是 header pointer， 现在更新 header， 见 Uebung page 11
+        *prev_next = neu; // Verkettung herstellen ， 这个*prev_next 就是 最新状态的header， 里面的size 是 25 - 10 -5 = 10， 说明这个 header 指向的mblock 可以盛放 10 个 byte
     }
 
     // Element als herausgegeben markieren
-    lauf->next = MAGIC;
+    lauf->next = MAGIC; // 这里得lauf 就是 被踢出去的block, 对 10 byte 负责， 所以加上magic 标志。 已经被从list （list 里面只能是 frei blocks）踢出去了
 
-    // Zeiger auf Speicher zurückgeben
+    /**
+     * 总结：
+     * lauf->next 里面分两种情况 存储：
+     * 假如你 lauf是 frei block， 应该被 insert 到list 中， lauf->next 就是存的是 下一个 加入的element，
+     * 加入lauf 是个 负责 10bits  的 block， lauf->next 就是 MAGIC， 不会被加入到list 里面。
+    */
+
+    // “Zeiger auf Speicher” zurückgeben
     return lauf->storage;
 }
 
@@ -197,8 +210,8 @@ void free (void *ptr) {
 
     // Element vorne einfügen
     if(mbp->next == MAGIC){
-        mbp->next = head;
-        head = mbp;
+        mbp->next = head; // 把 MAGIC 抹掉， 换成 header， header 这是在上面
+        head = mbp; // header 更新， header 下来了
     }
 
     abort();
