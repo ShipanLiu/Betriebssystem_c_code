@@ -85,7 +85,7 @@ void printList(void) {
 void *malloc (size_t size) {
 
     //malloc() 里面的参数是 0， 根据题意：wird malloc() mit der Größe 0 aufgerufen, dann liefert malloc() einen  NULL-Pointer zurück
-    if(size == 0)
+    if(size <= 0)
         return NULL;
 
     /**
@@ -103,15 +103,18 @@ void *malloc (size_t size) {
      * 假如是一个 MAGIC， 说明 memory 后面的第一个空间早就 被 使用， 所以就会验证 *header 是存在的。
      *
     */
+   /**
+    *
+   */
     if(head == NULL){
         struct mblock* help = (struct mblock*) memory;
         if(help->next != MAGIC){
             // 说明根本就没有 malloc 过，（因为malloc() 过之后，负责 “内容区域“ 的那个 struct mblock 里面就会带上MAGIC ）
-            // 说明 header 根本就不存在 header， 那就initialize 一个header
+            // 说明 这个 heap 区域里面 根本就不存在 header， 那就initialize 一个header
             // init head, empty list
-            help->size = SIZE - (sizeof(struct mblock));
-            help->next = NULL;     // 看 Ubung slide page 10， 这就是一个 struct mblock的 初始状态， size是heap
-                                  //剩余的空间， next 是 NULL
+            help->size = SIZE - (sizeof(struct mblock));  //sizeof(struct mblock) 这个block 就是给header 预定的
+            help->next = NULL;     // 看 Ubung slide page 10， 这就是一个 struct mblock的 初始状态， size是heap剩余的空间
+                                  //next 是 NULL， 因为后面没有 mblock 可供指向
             // 更新head
             head = help;
         }
@@ -119,22 +122,32 @@ void *malloc (size_t size) {
 
 
 
-    //  现在 *head  找了一个替身， 为malloc 一块内容 做准备
+    /**
+    *
+    * 现在我们想要 list durchlaufen， um ein geeignet Ele in der List zu funden
+   */
+
+
+
+    //  现在 *head  找了一个替身 lauf  (这叫 lauf variable)，
     struct mblock *lauf = head; // Laufzeiger
     // pre_next里面存的是 head pointer 的地址，  *(prev_next) = *header , 即header pointer 本身
+    //设立 prev_next 的意义就是 想要指向 next element
     struct mblock** prev_next = &head; // Schleppzeiger(拖拉指针), hilfreich bei der Verkettung, wenn ein Element herausgenommen wird.
 
     // 问题： 为什么有这么多 struct mblock 来供 lauf->next,  因为可能之前 malloc 了很多次， 也free 了很多次， 但是在free 之后， malloc 之前创建的 struct block 并不会
-    // 消失， 而且其中还保存着 之前 负责的 “内容块” 的 size， 这也就是为什么可以获得  lauf->size
+    // 消失， 而且其中还保存着 之前 负责的 “内容块” 的 size， 这也就是为什么可以获得  lauf->size，
     // Prüfe, ob es ein Element mit genügend speicher gibt.
     // lauf != NULL && lauf->size < size 这个条件就是： 我还有一个 struct mblock,到那时 这个struct mblock后面 的 size 不够 你要求的 size 了。
-    // Schleife läuft, bis entweder 一个合适的空间 gefunden wurde, oder läuft bis zum Ende, falls es keins gibt.
+    // Schleife läuft, bis entweder 一个合适的空间 gefunden wurde, oder läuft bis zum Ende, falls es keine gibt.
     while(lauf != NULL && lauf->size < size){
         // case1: 能走这一步， lauf = NULL 是 不可能的， 所以这里的 lauf != NULL 是一个 多余的条件
         // case2: 比方说，选了老大， 老大不可以(lauf->size < size)， 接着看老二 也不可以， 但是 老三可以（lauf->size > size,  空间足够大），
         // 由于 老三可以(lauf->size > size), 所以while循环 break， lauf 变成了 lauf->next
         prev_next = &(lauf->next);
         lauf = *prev_next;
+
+        // 上面的两行 代码 是不是可以 用   lauf = lauf->next 来取代
     }
 
     // 当 在while循环里面 遍历完全 之后， 发现 所有的 lauf->size 都 小于 要求的 size， 所以 在最后一次循环中，
@@ -152,11 +165,12 @@ void *malloc (size_t size) {
     // Falls nicht genug Speicher zum Aufteilen vorhanden ist, geben wir den ganzen Block heraus.
     // Der vorherige Next-Pointer zeigt nun auf das nachfolgende Element.
     // Das Element, das den für uns passenden Speicher verwaltet, ist also nicht mehr in der Verkettung (wurde einfach übersprungen).
-    // 这个block的大小只够 存 这 10bytes 的，剩余的空间(falls vorhandeln)， 不够再开发了， 所以将这个整个block 踢出去。
+    // 这个block的大小只够存（或者稍微大于）这 10bytes 的，剩余的空间(falls vorhandeln)， 不够再开发了， 所以将这个整个block 踢出去。
     // *prev_next 就是 head pointer， 因为 lauf 这个整个 block 被踢了出去(从linked list)，所以就不考虑lauf了，直接更新 header 指向 lauf->next
     if( (lauf->size - size) <= sizeof(struct mblock)){
-        *prev_next = lauf->next;
+        *prev_next = lauf->next;  // prev_next 就是 在 aktuell ele 被踢之后， 连接 previous ele 和 next ele 的。
     } else {
+        // 这里表示： 我们有 genug Speicher 想要 aufteilen
         // Fall der Speicher groß genug ist, um ihn aufzuteilen.
         // Neuer Block liegt direkt hinter dem angeforderten Speicher:
         /**
@@ -174,7 +188,7 @@ void *malloc (size_t size) {
         // siehe Beispiel: neue Größe =  gefundene Größe (=25) - gewünschte Größe (=10) - Blockgröße (=5, im Beispiel)
         // 下面计算剩下得大小。
         neu->size = lauf->size - size - sizeof(struct mblock); // sizeof(struct mblock) 是新 struct mblock 大小。
-        neu->next = lauf->next; // Verkettung herstellen， 因为 lauf 被踢出去了，在被踢出去之前， 把 lauf->next 下一个元素交接给 neu->next，表明 lauf 这个 lock完成使命， 被踢出去， neu 接上， 以便list不断
+        neu->next = lauf->next; // Verkettung herstellen， 因为 lauf 被踢出去了，在被踢出去之前， 把 lauf->next 下一个元素交接给 neu->next，表明 lauf 这个 lock完成使命， 被踢出去， neu 接上， 以便list不断, 相当于 neu 把 lauf 替换了
         // *prev_next 就是 header pointer， 现在更新 header， 见 Uebung page 11
         *prev_next = neu; // Verkettung herstellen ， 这个*prev_next 就是 最新状态的header， 里面的size 是 25 - 10 -5 = 10， 说明这个 header 指向的mblock 可以盛放 10 个 byte
     }
@@ -202,16 +216,17 @@ void free (void *ptr) {
     ^mbp     ^ptr
 
   - ptr zeigt auf den Speicherbereich, der freigegeben werden soll
-  - wir brauchen den dazugehörigen MBlock
+  - wir brauchen den dazugehörigen mblock
   - wie folgt erhalten wir den Pointer, beide Varianten (1 und 2) sind äquivalent
  */
     // Variante 1: struct mblock *mbp = (struct mblock*)((size_t) ptr - sizeof(struct mblock))
-    struct mblock *mbp = (struct mblock *)ptr - 1; // Variante 2
+    struct mblock *mbp = (struct mblock *)ptr - 1; // Variante 2,  mbp 就是 mblock pointer 的意思
 
-    // Element vorne einfügen
+    // Element vorne einfügen(根据题意， free 之后的 去掉MAGIC 的 mblock 要 放到 最前面)
+    // 视频 44：18
     if(mbp->next == MAGIC){
-        mbp->next = head; // 把 MAGIC 抹掉， 换成 header， header 这是在上面
-        head = mbp; // header 更新， header 下来了
+        mbp->next = head; // 把 MAGIC 抹掉， 换成 head， head 是list 里面的老首领了，现在这个老首领要被取代了， 变成老二了。
+        head = mbp; // header 更新， header 指向mbp， 符合题意， mbp 被free 之后，然后被提到list 的第一位。
     }
 
     abort();
@@ -219,16 +234,18 @@ void free (void *ptr) {
 
 void *realloc (void *ptr, size_t size) {
 
-    // laut Aufgabenstellung
+    // laut Aufgabenstellung， 要是pointer根本就不存在， 那我就 直接 malloc 创建一个
     if(ptr == NULL){
         return malloc(size);
     }
 
-    // laut Aufgabenstellung
+    // laut Aufgabenstellung，  relloc(*pointer, 0)  等价于  free(*pointer)
     if(size == 0){
         free(ptr);
         return NULL;
     }
+
+    // relloc就两种情况 entweder 空间变大 oder 变小
 
     // Abbilden auf: malloc+memcpy+free
     // Fehlerbehandlung nicht vergessen
@@ -243,8 +260,11 @@ void *realloc (void *ptr, size_t size) {
      * 2. Fall: ihr gebt standardmäßig die Größe des neuen Speicherbereichs an memcpy()
      *  - >  wenn der alte Speicherbereich kleiner ist, kopiert memcpy() zu viel Speicher, der nicht zum alten Bereich gehörte
      */
+    // 回到 对这个 smallerSpeicher 负责的 mblock 上
     struct mblock *mbp = (struct mblock *)ptr - 1;
     size_t smallerSize = mbp->size;
+
+    // 要查出 smallerSize  和 relloc 的 size， 哪个小，那个小 就在memcpy()里面用哪个，我们不希望 越界 copy
     if(smallerSize > size)
         smallerSize = size;
 
@@ -253,21 +273,31 @@ void *realloc (void *ptr, size_t size) {
     return new_ptr;
 }
 
+
+/**
+ * calloc()函数为nmemb个元素的数组分配内存空间，其中，每个元素的长度都是size个字节。
+ * 如果要求的空间无效，那么此函数返回指针。在分配了内存之后，calloc()函数会通过将所有位设置为0的方式进行初始化
+*/
 void *calloc (size_t nmemb, size_t size) {
 
     // catch overflow
     size_t bytes = nmemb * size;
+    // 因为上面算出的 变量 bytes 可能非常大， 可能 overflow，所以 要判断一下， 加入  overflow， bytes 的值 要比 自己期待的要小。
     if(size != 0 && bytes / size != nmemb){
         errno = ENOMEM;
         return NULL;
     }
 
     // malloc+memset
+    // memset是计算机中C/C++语言初始化函数。
+    //作用是将某一块内存中的内容全部设置为指定的值， 这个函数通常为新申请的内存做初始化工作。
+    // void *memset(void *str, int c, size_t n)
     void *ptr = malloc(bytes);
     if(ptr != NULL){
         memset(ptr, 0, bytes);
         return ptr;
     }
 
+    // else 说明 ptr = NULL , then return NULL
     return NULL;
 }
