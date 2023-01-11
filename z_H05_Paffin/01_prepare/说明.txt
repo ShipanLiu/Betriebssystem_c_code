@@ -1,0 +1,7 @@
+这里的都是 klausur 的 准备
+
+the programming task in the klausur must be a "thread" task
+
+
+01_mach :  the 4. task from SS21
+02_palim:  the 5. task from SS22--alex
