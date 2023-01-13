@@ -53,8 +53,8 @@ static char** input() {
 
   while(1) {
     if(EOF == fflush(stdin)) {
-		kill("fflush stdin");
-	}
+		  kill("fflush stdin");
+	  }
 
     char* word = fgets(buffer, bufferMaxSize, stdin);
     if(word == NULL) {
