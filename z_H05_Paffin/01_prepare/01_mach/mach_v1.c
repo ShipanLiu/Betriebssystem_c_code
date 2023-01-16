@@ -94,8 +94,10 @@ static void *thread_output(void *unused) {
 
 static void *thread_work(void *arg) {
 
-    char *cmd = arg;
+    //先 caste成 char*
+    char* cmd = arg;
 
+    // thread 自己自动 结束 自己，
     errno = pthread_detach(pthread_self());
     if (errno) {
         die("pthread_detach");
@@ -106,6 +108,7 @@ static void *thread_work(void *arg) {
         die("strdup");
     }
 
+    //queue_put就是 把 cmd2 这一行 放进queue。
     if (queue_put(cmd2, NULL, FLAG_RUNNING)) {
         die("queue_put");
     }
@@ -117,6 +120,7 @@ static void *thread_work(void *arg) {
         die("queue_put");
     }
 
+    // 到这里  这个 thread 死亡， 所以： V(sem_limit) ,  sem_limit 只管 控制 创建thread 的数量。
     V(sem_wait);
     V(sem_limit);
     return NULL;
@@ -169,7 +173,10 @@ int main(int argc, char **argv) {
     while (fgets(buf, sizeof(buf), fh)) {
         // falls es eine Leerzeile ist, sind alle Befehle der aktuellen Gruppe eingelesen
         // strcmp的返回值为 0， 假如 buf 和 ‘\n’相等的话。
-        // 说明是 读到了最后一行了。
+        // 一个machfile.txt 里面可能有 很多组命令， 每一组的命令 里面有 很多的命令， 我们执行命令 是 一组一组进行的。
+        // 这里遇见 leerzeile,说明 这一组已经完事，下面的代码 保证 这一组的 最后一行 正确执行。 比如 第一组 完事之后， threads_started为5，
+        // 执行完下一行代码之后， 就会变成 threads_started = 4.
+        // 意思是保证 在最后一行执行完之后， 才进入下一组。
         if (!strcmp(buf, "\n")) {
           // 假如 是 个 leerzeile， 才会进入
             while (threads_started > 0) {

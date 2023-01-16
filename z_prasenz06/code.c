@@ -6,18 +6,19 @@ new tutorial test code,  替补的老师的讲解
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/types.h>  // opendir
-#include <dirent.h> // readdir()
+#include <sys/types.h>  // types eg. ino_t --> Inode number
+#include <dirent.h> // readdir() opendir
 #include <errno.h>
-#include <unistd.h>
-#include <sys/stat.h>
+#include <unistd.h> // execvp(), readLink()
+#include <sys/stat.h>  //lstat()  S_ISLINK
 
 static void die(char* msg) {
   perror(msg);
+  exit(EXIT_FAILURE);
 }
 
 int main(int argc, char* argv[]) {
-  DIR* d = opendir("*");
+  DIR* d = opendir(".");
   // error handling
   if(d == NULL) {
     die("opendir");
