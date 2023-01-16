@@ -43,7 +43,7 @@ int main(int argc, char* argv[]) {
       die("lstat");
     }
 
-    if(S_ISLINK(sb.st_mode)) {
+    if(S_ISLNK(sb.st_mode)) {
       if(printf("%s", de->d_name) < 0) {
         die("printf");
       }
