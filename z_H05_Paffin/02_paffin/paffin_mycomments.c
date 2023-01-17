@@ -1,3 +1,15 @@
+/*
+
+semLimit  用在  创建 grep thred  和  死亡 grep thread 里面
+
+semNotify   用在 block main  和   craw thred  和  死亡 grep thread 里面
+
+
+
+ */
+
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <dirent.h>
@@ -6,7 +18,7 @@
 #include <sys/stat.h>
 #include <string.h>
 
-#include "list.h"
+#include "list.h"s
 #include "sem.h"
 
 // (module-)global variables
@@ -223,7 +235,6 @@ static void* processDir(char* path) {
  * \return Always return NULL
  */
 static void* processEntry(char* path, struct dirent* entry) {
-
 	//concat the path and entryName --> create a new path called pathPlusEntry to open.
   int pathPlusEntryLength = strlen(path) + strlen(entry->d_name) + 2; // 2 means '/' + '\0'
   char* pathPlusEntry = (char*)malloc(pathPlusEntryLength*sizeof(char));
@@ -246,7 +257,9 @@ static void* processEntry(char* path, struct dirent* entry) {
   if(S_ISDIR(buf.st_mode)) {
     //back to processDir and pass the newst path concat
     processDir(pathPlusEntry);
-  }else if (S_ISREG(buf.st_mode)) {
+  }
+
+  if(S_ISREG(buf.st_mode)) {
 
     // due to the limited number of grep threads
     P(semLimit);
@@ -264,8 +277,10 @@ static void* processEntry(char* path, struct dirent* entry) {
     // update activeCrawlThreads
     incVal(&activeGrepThreads);
 
-  } else {free(pathPlusEntry);}
+  }
 
+
+  free(pathPlusEntry);
 	return NULL;
 }
 
@@ -296,13 +311,12 @@ static void* processFile(void* path) {
   // this is a thread function, so first cast
   char* filePath = (char*)path;
 
-
   // open file
   FILE* fh = fopen(filePath, "r");
   if(!fh) die("fopen");
 
   // create space to save each line
-  char line[4096+2];
+  char* line[4096+2];
   // record the line number
   unsigned long lineNum = 0;
 
@@ -326,7 +340,6 @@ static void* processFile(void* path) {
 
   //close file
   if(fclose(fh) == EOF) die("fclose");
-
 
   // one thread dead
   decVal(&activeGrepThreads);

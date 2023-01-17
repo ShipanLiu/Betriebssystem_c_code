@@ -401,7 +401,7 @@ static void* processEntry(char* path, struct dirent* entry) {
     V(newDataSignal);
   }
 
-  // 不要忘记 free
+  //这里不能free， 因为参数 还要往下传递
 
   free(pathPlusEntry);
 

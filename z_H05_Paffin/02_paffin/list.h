@@ -23,6 +23,11 @@
  */
 int enqueue(const char *path, const char *line, unsigned long line_number);
 
+
+
+
+
+
 /**
  * @brief Dequeues and formats an element of the list.
  *
