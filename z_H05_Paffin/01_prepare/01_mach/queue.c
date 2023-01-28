@@ -14,7 +14,7 @@ struct elem {
     char *out;          // Speicher für Ausgabe
     int flags;          // Optionale Flags
 };
-static struct elem* queue; // Listenkopf
+static struct elem* queue = NULL; // Listenkopf
 
 int queue_init(void) {
 
@@ -49,7 +49,7 @@ void queue_deinit(void) {
 // Ein Warteschlangenelement entspricht einer Ausgabe.
 int queue_put(char *cmd, char *out, int flags) {
 
-    struct elem *x = malloc(sizeof(*x));
+    struct elem *x = malloc(sizeof(struct elem));
     if (!x) {
         return -1;
     }

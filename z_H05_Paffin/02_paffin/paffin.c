@@ -1,3 +1,10 @@
+/*
+T00.25
+
+Shipan Liu  108019201553
+Minhua Liu  108020210282
+
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <dirent.h>
@@ -255,7 +262,11 @@ static void* processEntry(char* path, struct dirent* entry) {
     // here you create a new grep thread
     pthread_t tid;
     errno = pthread_create(&tid, NULL, processFile, pathPlusEntry);
-    if(errno != 0) die("pthread_create");
+    if(errno != 0) {
+      // if create with error, then semLimit shoud ++
+      V(semLimit);
+      die("pthread_create");
+    }
 
     // self detach
     errno = pthread_detach(tid);
