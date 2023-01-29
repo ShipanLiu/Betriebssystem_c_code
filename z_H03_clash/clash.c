@@ -63,6 +63,7 @@ static void printPath() {
     myKill("fputs");
   }
 
+  // 这是 按照题目的要求的结果。
   printf(":");
 
   if(EOF == fflush(stdout)) {
@@ -173,6 +174,7 @@ int main() {
       int c;
       do{
         c = fgetc(stdin);
+        // c = getchar();
       }while(c != '\n' && c != EOF);
 
       // we have to guarantee that fgetc does his job well so that the buffer will be cleaned for next time input
@@ -262,7 +264,7 @@ int main() {
 
     // here is parent process
     // if background: insert into pList + do not wait for terminating
-    // because you did not wait() in the background mode, so you need to deal with the zombies.
+    // because you did not wait() in the frontend mode, so you need to deal with the zombies.
     if(isBackground == 1) {
       if(-2 == insertElement(pid, job)) {
         // erroro in plist.c ist set but in this file(clash.c) not
