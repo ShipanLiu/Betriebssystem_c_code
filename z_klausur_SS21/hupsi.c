@@ -32,11 +32,12 @@ struct process {
 
 };
 
-// Makros, Funktionsdeklarationen globale Variablen
-pid_t run(char* cmd);
-void waitProcess(void);
+// Makros, Funktionsdeklarationen globale Variablen(忘记了写 static)
+static pid_t run(char* cmd);
+static void waitProcess(void);
 
-struct process* header = NULL;
+// 不要忘记static
+static struct process* header = NULL;
 static int limit = 0;
 
 
@@ -48,6 +49,7 @@ int main(int argc, char** argv) {
     usage();
   }
 
+  // TODO： 看 paffin 里面如何用的。
   // get the process limit number n
   errno = 0;
   char* endStr;
@@ -68,8 +70,8 @@ int main(int argc, char** argv) {
   limit = (int)x;
 
 
-  // read file per line via stdin
-  char buf[CMD_MAX+1];
+  // read file per line via stdin  (+2!!!!! 注意)
+  char buf[CMD_MAX+2];
 
   while(fgets(buf, sizeof(buf), stdin)) {
 

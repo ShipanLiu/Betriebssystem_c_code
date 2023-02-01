@@ -1,6 +1,7 @@
 GCC = gcc
 GCC_FLAGS = -std=c11 -pedantic -Wall -Werror -D_XOPEN_SOURCE=700
 
+
 all: clash
 
 clash: clash.o plist.o

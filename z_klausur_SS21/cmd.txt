@@ -1,0 +1,10 @@
+echo jier1
+echo jier2
+echo jier3
+echo jier4
+echo jier5
+echo jier6
+echo jier7
+echo jier8
+echo jier9
+echo jier10
