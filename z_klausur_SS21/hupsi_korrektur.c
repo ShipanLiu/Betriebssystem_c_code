@@ -28,7 +28,7 @@ struct process {
   //Eigene Mitgelieder
   char* command;
   time_t start_time;
-  time_t end_time;
+  time_t end_time; //// unnötig, es muss nur ein mal die Differenz time(NULL) - start_time ausgerechnet werden
   struct process* next;
 
 };
@@ -37,8 +37,7 @@ static pid_t run(char*);
 static void waitProcess(void);
 
 static struct process* process_list_header;
-static long procs = 0;
-
+static long procs = 0; //// Das muss nicht unbedingt global sein
 int main(int argc, char** argv) {
 
   char* end;
@@ -57,7 +56,6 @@ int main(int argc, char** argv) {
     if(procs == max_proc) {
       // collect zombies and decrease process number
       waitProcess();
-      // proc--;
     }
 
     // create a new process node for each cmd line
@@ -65,7 +63,7 @@ int main(int argc, char** argv) {
     if(proc == NULL) die("calloc");
 
     // remove \n
-    buf[strlen(buf)-1] = '\0';
+    buf[strlen(buf)-1] = "\0"; //// das muss nicht manuell hinzugefügt werden
     proc->command = strdup(buf);
     if(proc->command == NULL) die("strdup");
     proc->start_time = time(NULL);
@@ -84,7 +82,6 @@ int main(int argc, char** argv) {
   // collect zombies
   while(0 < procs) {
     waitProcess();
-    //proc--
   }
 
   exit(EXIT_SUCCESS);
@@ -102,7 +99,7 @@ static pid_t run(char* command) {
   }else if(pid == 0) {
     //split the "cmmand"
     int index = 0;
-    char* paraArr[CMD_MAX/2];
+    char* paraArr[CMD_MAX/2]; //// nicht vergessen: Das ist nur bei geraden Zahlen ok. Sonst (MAX + 1)/2
     paraArr[index] = strtok(command, " ");
     index++;
 
@@ -112,6 +109,7 @@ static pid_t run(char* command) {
 
     //run the cmd
     execvp(paraArr[0], paraArr);
+      ////
     //if something wrong, this process will be ended, so now set end_time
     // step1, find this node in the process list
     struct process* node =process_list_header;
@@ -120,6 +118,7 @@ static pid_t run(char* command) {
     }
     // node found! now set the endtime to the node.
     node->end_time = time(NULL);
+      //// unnötig, das Programm wird hiernach ja eh beendet
     die("execvp");
   }
 
@@ -165,6 +164,7 @@ static void waitProcess(void) {
     // exit with success
     // now waitpid terminates a kindprocess successfully
     procs--; // the main process can create one more new process
+    //// procs muss IMEMR veringert werden, wennn sich ein Prozess beendet, nicht nur wenn er dies erfolgreich tut. Sonst verringert sich die Anzahl der Prozesse, die parallel laufen dürfen, permanent
     // output
     printf("pid:[%d], cmd:[%s], Exitstatus[%d], Dauer:[%ld]\n", (int)pid, node->command, WEXITSTATUS(status), (long)(node->end_time - node->start_time));
     return;
@@ -174,3 +174,5 @@ static void waitProcess(void) {
   }
 
 }
+
+//// Sieht alles in allem gut aus!

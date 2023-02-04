@@ -212,6 +212,7 @@ static void* processDir(char* path) {
          | getan hast (-0.5)                                                  |
          +-------------------------------------------------------------------*/
 
+  // this "errno = 0" should not be here, it should be before the readdir()
   //errno = 0;
   while(entry != NULL) {
     // ignore if the entry is "." or ".."

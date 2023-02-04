@@ -61,6 +61,21 @@ static void decVal(int* variable) {
   V(semMutex);
 }
 
+// for better usage(klausur)
+static void modifyVal(int* variable, int f) {
+  P(semMutex);
+  if(flag == 1) {
+    *variable += 1;
+  }else {
+    *variable -= 1;
+  }
+  V(semMutex);
+}
+
+// for better usage(klausur)
+
+
+
 /**
  * \brief Initializes necessary data structures and spawns one crawl-Thread per tree.
  * Subsequently, waits passively on the termination of all threads.

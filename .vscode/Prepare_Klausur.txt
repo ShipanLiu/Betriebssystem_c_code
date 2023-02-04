@@ -1,0 +1,33 @@
+（from Hupsi）
+struct process *proc = calloc(1, sizeof(struct process));
+if(proc == NULL) die("calloc");
+
+
+// for better usage(klausur)
+static void modifyVal(int* variable, int f) {
+  P(semMutex);
+  if(flag == 1) {
+    *variable += 1;
+  }else {
+    *variable -= 1;
+  }
+  V(semMutex);
+}
+
+
+//Semaphore
+
+sem_limit:  在创建 thread 之前P ，  在创建 thread失败之后， V，    在thread 死之前 V
+
+
+sem_notify:  在 thread 死之前 ， 更新 activeThread 这个 global V，  在 main 里面， （当main 的任务是 输出的时候）
+
+
+sem_mutex:
+
+
+如何判断所有的 thread 已死： P（notify） activeCram 和 activeGrep 这两个 global variable 来判断。
+
+
+如何保持不让 仅有的 ausgabe thread 不死：   在main 最后 用 pthread_join   或者用 pthread_detach, 但是在之前 用一个 while schleife 来
+ 输出， 卡在 while shleife 上面。
