@@ -40,6 +40,10 @@ static struct process* process_list_header;
 
 int main(int argc, char** argv) {
 
+  if(argc != 2) {
+    usage();
+  }
+
   char* end;
   errno = 0;
   long max_proc = strtol(argv[1], &end, 10);
