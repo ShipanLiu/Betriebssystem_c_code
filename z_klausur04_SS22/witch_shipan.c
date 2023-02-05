@@ -108,13 +108,18 @@ int main(int argc, char** argv) {
     if(errno) {
       die("pthread_create");
     } else {
+      // 因为你操作了suchThreadNr 在thread function， 所以也要保护起来。
+      P(sem_mutex);
       suchThreadNr++;
+      V(sem_mutex);
     }
 
     // detach
     errno = pthread_detach(pid[i]);
     if(errno) die("pthread_detach");
   }
+
+
 
 
   //check if all thread dead
@@ -142,7 +147,7 @@ int main(int argc, char** argv) {
   if(listEleNr) {
     exit(EXIT_SUCCESS);
   } else {
-    die("not found anyone");
+    err("not found anyone");
   }
 
 
