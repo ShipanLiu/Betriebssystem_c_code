@@ -26,6 +26,11 @@ static void err(const char* msg) {
   exit(EXIT_FAILURE);
 }
 
+static void warn(const char* msg) {
+  fprintf(stderr, msg);
+}
+
+
 static void usage(void) {
   fprintf(stderr, "Usage: ./parrots <file\n>");
   exit(EXIT_FAILURE);
@@ -98,6 +103,7 @@ int main(int argc, char** argv) {
   //Such-threads starten und auf Beendigung warten
   pthread_t pid[index];
   for(int i = 0; i < index; i++) {
+
     errno = pthread_create(&pid[i], NULL, thread_start, dirArr[i]);
     if(errno) {
       die("pthread_create");
@@ -145,7 +151,18 @@ int main(int argc, char** argv) {
 
 // function thread_start
 static void* thread_start(void* arg) {
+  char* dir = (char*)arg;
 
+  search_dir(header->search, dir, header->hunt);
+
+
+  P(sem_mutex);
+  suchThreadNr--;
+  V(sem_mutex);
+
+  V(sem_notify);
+
+  return NULL;
 }
 
 
@@ -154,4 +171,61 @@ static void* thread_start(void* arg) {
 
 static void search_dir(char* search, char* dir, bool hunt) {
 
+  char newPath[strlen(dir) + strlen(search) + 1];
+
+  DIR* dirPointer = opendir(dir);
+  if(dirPointer == NULL) warn("opendir");
+
+  struct dirent* entry = NULL;
+  struct stat buf;
+
+  errno = 0;
+  entry = readdir(dirPointer);
+
+  while(entry != NULL) {
+    // process entry
+    if(lstat(entry->d_name, &buf) == -1) {
+      errno = 0;
+      entry = readdir(dirPointer);
+      warn("lstat");
+      continue;
+    };
+
+    // if it is a regular file
+    if(S_ISREG(buf.st_mode)) {
+      if(strcmp(entry->d_name, header->search) == 0) {
+        //create new path;
+        strcat(newPath, dir);
+        strcat(newPath, "/");
+        strcat(newPath, search);
+
+
+        P(sem_mutex);
+          // update listEleNr
+          listEleNr++;
+
+          // insert the "new path" into list
+          insertElement(newPath);
+        V(sem_mutex);
+
+        // if delete this file
+        if(header->hunt) {
+          if(unlink(newPath) != 0) warn("unlink");
+        }
+      }
+    }
+
+    // if it is a verzeichniss
+    if(S_ISDIR(buf.st_mode)) {
+      search_dir(header->search, newPath, header->hunt);
+    }
+
+    errno = 0;
+    entry = readdir(dirPointer);
+  }
+  if(errno) warn("readdir");
+
+  if(closedir(dirPointer) == -1) warn("closedir");
+
+  return NULL;
 }
