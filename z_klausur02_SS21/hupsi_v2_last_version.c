@@ -28,7 +28,6 @@ struct process {
   //Eigene Mitgelieder
   char* command;
   time_t start_time;
-  time_t end_time; //// unnötig, es muss nur ein mal die Differenz time(NULL) - start_time ausgerechnet werden
   struct process* next;
 
 };
@@ -37,7 +36,8 @@ static pid_t run(char*);
 static void waitProcess(void);
 
 static struct process* process_list_header;
-static long procs = 0; //// Das muss nicht unbedingt global sein
+
+
 int main(int argc, char** argv) {
 
   char* end;
@@ -50,22 +50,24 @@ int main(int argc, char** argv) {
   }
 
 
+  long procs = 0;
   char buf[CMD_MAX + 2];
   while(fgets(buf, sizeof(buf), stdin) != NULL) {
     // before executing the new cmd line, check if there are free process left.
     if(procs == max_proc) {
       // collect zombies and decrease process number
       waitProcess();
+      // 我们保佑乐观的态度认为 waitProcess之后， 就有一个process 灭亡。
+      procs--;
     }
 
     // create a new process node for each cmd line
     struct process *proc = calloc(1, sizeof(struct process));
     if(proc == NULL) die("calloc");
 
-    // remove \n
-    buf[strlen(buf)-1] = "\0"; //// das muss nicht manuell hinzugefügt werden
     proc->command = strdup(buf);
     if(proc->command == NULL) die("strdup");
+
     proc->start_time = time(NULL);
     // we assume run will not have any error
     proc->pid = run(buf);
@@ -82,6 +84,7 @@ int main(int argc, char** argv) {
   // collect zombies
   while(0 < procs) {
     waitProcess();
+    procs--;
   }
 
   exit(EXIT_SUCCESS);
@@ -99,7 +102,7 @@ static pid_t run(char* command) {
   }else if(pid == 0) {
     //split the "cmmand"
     int index = 0;
-    char* paraArr[CMD_MAX/2]; //// nicht vergessen: Das ist nur bei geraden Zahlen ok. Sonst (MAX + 1)/2
+    char* paraArr[(CMD_MAX+1)/2]; //// nicht vergessen: Das ist nur bei geraden Zahlen ok. Sonst (MAX + 1)/2
     paraArr[index] = strtok(command, " ");
     index++;
 
@@ -109,16 +112,14 @@ static pid_t run(char* command) {
 
     //run the cmd
     execvp(paraArr[0], paraArr);
-      ////
-    //if something wrong, this process will be ended, so now set end_time
-    // step1, find this node in the process list
-    struct process* node =process_list_header;
-    while(node->pid != pid) {
-      node = node->next;
-    }
-    // node found! now set the endtime to the node.
-    node->end_time = time(NULL);
-      //// unnötig, das Programm wird hiernach ja eh beendet
+    // // step1, find this node in the process list
+    // struct process* node =process_list_header;
+    // while(node->pid != pid) {
+    //   node = node->next;
+    // }
+    // // node found! now set the endtime to the node.
+    // node->end_time = time(NULL);
+    //   //// unnötig, das Programm wird hiernach ja eh beendet
     die("execvp");
   }
 
@@ -150,23 +151,17 @@ static void waitProcess(void) {
     }
   }
 
-  // find this node in the process list and update the end_time
   // step1, find this node in the process list
   struct process* node =process_list_header;
   while(node->pid != pid) {
     node = node->next;
   }
-  // node found! now set the endtime to the node.
-  node->end_time = time(NULL);
 
   // check if this process is excited or not
   if(WIFEXITED(status)) {
     // exit with success
     // now waitpid terminates a kindprocess successfully
-    procs--; // the main process can create one more new process
-    //// procs muss IMEMR veringert werden, wennn sich ein Prozess beendet, nicht nur wenn er dies erfolgreich tut. Sonst verringert sich die Anzahl der Prozesse, die parallel laufen dürfen, permanent
-    // output
-    printf("pid:[%d], cmd:[%s], Exitstatus[%d], Dauer:[%ld]\n", (int)pid, node->command, WEXITSTATUS(status), (long)(node->end_time - node->start_time));
+    printf("pid:[%d], cmd:[%s], Exitstatus[%d], Dauer:[%ld]\n", (int)pid, node->command, WEXITSTATUS(status), (long)(time(NULL) - node->start_time));
     return;
   } else {
     // exit without success
@@ -174,5 +169,3 @@ static void waitProcess(void) {
   }
 
 }
-
-//// Sieht alles in allem gut aus!
