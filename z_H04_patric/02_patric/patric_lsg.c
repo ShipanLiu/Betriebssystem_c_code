@@ -73,6 +73,8 @@ static void outputCallback(int boundary, int interior) {
 
 // this is the Rechenthread function
 static void* workerThread(void* param) {
+  P(semLimit);
+
   struct triangle* w = (struct triangle*) param;
   errno = pthread_detach(pthread_self());
   if(errno != 0) die("pthread_create");
@@ -102,7 +104,7 @@ static void* outputThread(void* param) {
   if(errno != 0) die("pthread_detach");
 
   // Rechenthread 里面 把数据一旦更新， 那就unblock.
-  V(semNotify);
+  P(semNotify);
 
   // 使用一个 while schleife, 从而不让 这个 thread 提前结束生命。
   // 这个while loop 是在所有的 thread 都 dead 之后 才 继续的。 由 shutdown 负责。 shutdown 的 值就是 在main 中设置的。
