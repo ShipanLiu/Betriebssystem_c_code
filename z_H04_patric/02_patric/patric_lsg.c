@@ -60,17 +60,18 @@ static void warn(char* msg) {
   exit(EXIT_FAILURE);
 }
 
-static SEM* semOrDie(int initVal) {
-  SEM* sem = semCreate(initVal);
-  if(!sem) die("semCreate");
-  return sem;
-}
-
+// this is for the function "countPoints()", acts as the second parameter
+// 因为 countPoints 是在threads 中使用的，===》 outputCallback 也是在 output里面使用，
+// 所以这个函数里面的 global variable 的操作需要 semaphore 来保护起来。
 static void outputCallback(int boundary, int interior) {
+  P(semMutex);
   outputState.boundary += boundary;
   outputState.interior += interior;
+  V(semMutex);
 }
 
+
+// this is the Rechenthread function
 static void* workerThread(void* param) {
   struct triangle* w = (struct triangle*) param;
   errno = pthread_detach(pthread_self());
@@ -82,10 +83,13 @@ static void* workerThread(void* param) {
   decVal(&outputState.active);
   incVal(&outputState.finished);
 
+  // 在 countpoints 完事 之后， 这个 w 就没用了， 直接 free 掉。
   free(w);
 
   // main 主 thread 被允许 创建新的 thread。
   V(semLimit);
+  // 因为我更新数据了， 所以 output thread开始 发力。
+  V(semNotify);
 
   return NULL;
 }
@@ -97,12 +101,20 @@ static void* outputThread(void* param) {
   errno = pthread_detach(pthread_self());
   if(errno != 0) die("pthread_detach");
 
+  // Rechenthread 里面 把数据一旦更新， 那就unblock.
+  V(semNotify);
+
   // 使用一个 while schleife, 从而不让 这个 thread 提前结束生命。
   // 这个while loop 是在所有的 thread 都 dead 之后 才 继续的。 由 shutdown 负责。 shutdown 的 值就是 在main 中设置的。
   // 注意 outputState.active 是不包括 这一个 ausgangthread 的。
+  // 这个 shutdown 实际上可以 由 outputState.active 这个值 来取代的， 当 outputState.active=0的时候，就是 finished 了。
   while(!shutdown) {
-    // 因为 printf 是 langsam function， 所以用一下copy
+    // 因为 printf 是 langsam function， 所以用一下copy，为了得到正确的数据， 用 P 和 V 来保护一下。
+
+    P(semMutex);
     struct state copy = outputState;
+    V(semMutex);
+
     printf("\rFound %d boundary, %d interior points, %d active threads, %d finished threads",
     copy.boundary, copy.interior, copy.active, copy.finished);
     if(fflush(stdout) != EOF) die("fflush");
@@ -117,10 +129,12 @@ static void* outputThread(void* param) {
 }
 
 
+
+// this is a easy function to get the max number of thread that could exist at the same time,
+// this function will appear in the klausur
 static int parse_positive_int_or_die(char *str) {
     errno = 0;
     char *endptr;
-
 
     long x = strtol(str, &endptr, 10);
     if (errno != 0) {
@@ -143,6 +157,9 @@ static int parse_positive_int_or_die(char *str) {
 }
 
 
+
+
+// start of the main function
 int main(int argc, char** argv) {
   // 只允许 有两个 argument
   if(argc != 2) warn("argc is not 2");
@@ -162,10 +179,13 @@ int main(int argc, char** argv) {
     struct triangle *w = malloc(sizeof(struct triangle));
     if(!w) die("malloc");
 
+    //和 fgets 一样， 每行每行读入。
     int matches = scanf("(%d,%d),(%d,%d),(%d,%d)",
             &w->point[0].x, &w->point[0].y,
             &w->point[1].x, &w->point[1].y,
             &w->point[2].x, &w->point[2].y);
+
+    // 到这一步算是把 w 全部填充好了。
 
     if(matches == EOF) break;
 
@@ -173,7 +193,7 @@ int main(int argc, char** argv) {
     int error = 0;
     if(matches != 6) {error = 1;}
 
-    //get the left chars in the stdin
+    //get the left chars in the stdin(多出来的 那个 char 是不是 '\n'  或者 '\0')
     int c = getchar();
     if(c != '\n' && c != '\0') {
       error = 1;
@@ -188,17 +208,39 @@ int main(int argc, char** argv) {
     // create worker thread
     pthread_t workerTid;
     errno = pthread_create(&workerThread, NULL, workerThread, w);
-    if(errno != 0) die("pthread_create");
+    if(errno != 0) {
+      //没有创建成功, 忽略这一个line， 进行下一line， 不要exit
+      perror("bad create");
+      continue;
+    }
 
-    // active++
-    outputState.active++;
-
-    spawned++;
+    // active++ , 因为outputState.active 在threads 里面也别调用。 所以 用P 和 V 来保护起来.
+    // 因为thread 的创建 和 thread 的执行是 mixed 的， 所以 用P 和 V 来保护起来.
+    // 假如 因为thread 的创建 和 thread 的执行 是 分开的， 就不用 保护了，  见 klausur ws21/22 的 parrots 一题
+    // outputState.active++;
+    incVal(outputState.active);
   }
 
   if(ferror(stdin)) die("fgets() error");
 
-  // final cleanup
+
+  // 查看是否 所有的 rechenthread 已经死亡。 outputState.active 这个数 是代表 rechenthread active 的数量。
+  P(semMutex);
+  int activeWorkThread = outputState.active;
+  V(semMutex);
+  while(1) {
+    if(activeWorkThread == 0) {
+      break;
+    }
+  }
+
+  //把 shutdown 改成 true, 以便 outputThread 也能够打破 while循环， 走向死亡结束自己。
   shutdown = true;
+
+  semDestroy(semMutex);
+  semDestroy(semNotify);
+  semDestroy(semLimit);
+
+
   return EXIT_SUCCESS;
 }

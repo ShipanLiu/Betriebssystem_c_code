@@ -219,7 +219,7 @@ int main(int argc, char* argv[]) {
     }
 
 
-
+    // 实际上这里的正确写法是： struct triangle* tri 应该创建 pointer。
     struct triangle tri;
 
     for(int i=0; i<3; i++) {
