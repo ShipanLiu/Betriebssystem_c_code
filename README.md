@@ -2,7 +2,7 @@ this repo records the exercises in SS2022 and WS22/23(wiederholungssemester) of 
 
 if you feel upset or worried before the final exam, please give me a star for this github repo, I will use the traditional mysterious and powerful chinese spell to bless you, so that you will pass the exam as me.
 
-![prove of the chinese spell](./assets/prove.png)
+![homepage](./asset/prove.png)
 
 
 User Guide:
