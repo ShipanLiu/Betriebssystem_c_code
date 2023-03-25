@@ -7,7 +7,7 @@ if you feel upset or worried before the final exam, please give me a star for th
 
 User Guide:
 
-01-all folders that start with "z" have nothing to do with the russian army but just means they belong to the WS22/23, same as all the folders start with "u" means they belong to SS2022
+01-all folders that start with "z" just means they belong to the WS22/23, same as all the folders start with "u" means they belong to SS2022
 
 02-the Wiederholung Klausur is way much easier than then first Klausur.
 
